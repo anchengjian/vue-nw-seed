@@ -18,15 +18,21 @@ npm run build
 
 # build for production and view the bundle analyzer report
 npm run build --report
+
+# only build nw
+npm run build --onlyNW
+
+# default is build `setup.exe` in windows
+npm run build --noSetup
 ```
 
 For detailed explanation on how things work, checkout the [guide](http://vuejs-templates.github.io/webpack/) and [docs for vue-loader](http://vuejs.github.io/vue-loader).
 
 ## Demo
-`npm run dev`
+### `npm run dev`
 ![dev](/docs/assets/dev.gif)
 
-`npm run build`
+### `npm run build`
 ![build](/docs/assets/build.gif)
 
 ## FAQ

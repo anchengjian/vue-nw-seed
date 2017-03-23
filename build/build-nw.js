@@ -5,14 +5,13 @@ var util = require('util')
 
 // var nwPath = require('nw').findpath()
 var rootPath = path.resolve(__dirname, '../')
-var distPath = path.resolve(rootPath, './dist')
-var manifestPath = path.resolve(distPath, './package.json')
 
 // get config
 var config = require(path.resolve(rootPath, 'config'))
 
 // `./package.json`
 var tmpJson = require(path.resolve(rootPath, './package.json'))
+var manifestPath = path.resolve(config.build.assetsRoot, './package.json')
 
 // manifest for `./dist/package.json`
 var manifest = {}
@@ -31,7 +30,11 @@ function errHandle(err, data) {
 if (!config.build.nw.builder) return
 var NwBuilder = require('nw-builder')
 var nw = new NwBuilder(config.build.nw.builder)
-nw.build(function(err) {
+nw.build(function(err, data) {
   if (err) console.log(err)
-  console.log('all done!')
+  console.log('build nw done!')
+
+  // build windows setup
+  if (config.build.noSetup) return
+  if (~config.build.nw.builder.platforms.toString().indexOf('win')) require('./build-win-setup.js')
 })
