@@ -40,3 +40,7 @@ For detailed explanation on how things work, checkout the [guide](http://vuejs-t
 NW.js 不是全版本都支持 XP，由于 Chromium50 开始就不支持XP了，所以如果你的客户端要支持 XP，目前最佳的版本选择是 `0.14.7` 。参见 NW.js 的博客 [NW.js v0.14.7 (LTS) Released](https://nwjs.io/blog/v0.14.7/)
 ### 国内用 NPM 安装 NW 很慢很卡！
 可以先想办法把包体下下来到本地，再进行安装。在我之前的一篇文章中介绍过: [用 vue2 和 webpack 快速建构 NW.js 项目](https://github.com/anchengjian/anchengjian.github.io/blob/master/posts/2017/vuejs-webpack-nwjs.md)
+
+### 安装包默认是英文?
+如果您不做任何更改，则默认是英文的。   
+汉化的话，我提供了一个中文语言包。请手动打开 `./config/setup.iss` 中关于 `Languages` 的注释。

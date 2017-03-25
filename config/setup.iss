@@ -57,5 +57,9 @@ Name: "{commondesktop}\{#MyAppAliasName}"; Filename: "{app}\{#MyAppExeName}"; Ta
 Name: "{group}\{#MyAppAliasName}"; Filename: "{app}\{#MyAppExeName}"
 Name: "{group}\uninstall {#MyAppAliasName}"; Filename: "{uninstallexe}"
 
+; 中文汉化语言包
+; [Languages]
+; Name: "chinese"; MessagesFile: "_resourcesPath_\ChineseSimp.isl"
+
 [Run]
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent
