@@ -21,13 +21,15 @@ fs.readdir(setupOptions.files, function(err, files) {
     const curPath = path.resolve(setupOptions.files, fileName)
     fs.stat(curPath, function(err, stats) {
       if (err || stats.isFile()) return
-      else if (stats.isDirectory()) return makeExeSetup(Object.assign({}, setupOptions, { files: curPath }))
+      if (stats.isDirectory()) {
+        makeExeSetup(Object.assign({}, setupOptions, { files: curPath, platform: fileName }))
+      }
     })
   })
 })
 
 function makeExeSetup(opt) {
-  const { issPath, files, outputPath, resourcesPath, appPublisher, appURL, appId } = opt
+  const { issPath, files, outputPath, outputFileName, resourcesPath, appPublisher, appURL, appId, platform } = opt
   const { name, appName, version } = tmpJson
   const tmpIssPath = path.resolve(path.parse(issPath).dir, '_tmp.iss')
 
@@ -41,6 +43,7 @@ function makeExeSetup(opt) {
         .replace(/_appName_/g, appName)
         .replace(/_version_/g, version)
         .replace(/_outputPath_/g, outputPath)
+        .replace(/_outputFileName_/g, getOutputName(outputFileName, { name, version, platform }))
         .replace(/_filesPath_/g, files)
         .replace(/_resourcesPath_/g, resourcesPath)
         .replace(/_appPublisher_/g, appPublisher)
@@ -59,5 +62,11 @@ function makeExeSetup(opt) {
         })
       })
     })
+  })
+}
+
+function getOutputName(str, data) {
+  return str.replace(/\$\{(.*?)\}/g, function(a, b) {
+    return data[b] || b
   })
 }

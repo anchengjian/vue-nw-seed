@@ -10,6 +10,7 @@
 #define MyAppURL "_appURL_"
 #define MyAppExeName "_name_.exe"
 #define OutputPath "_outputPath_"
+#define OutputFileName "_outputFileName_"
 #define SourceMain "_filesPath_\_name_.exe"
 #define SourceFolder "_filesPath_\*"
 #define LicenseFilePath "_resourcesPath_\license.txt"
@@ -31,7 +32,7 @@ AppUpdatesURL={#MyAppURL}
 DefaultDirName={pf}\{#MyAppName}
 LicenseFile={#LicenseFilePath}
 OutputDir={#OutputPath}
-OutputBaseFilename={#MyAppName}-v{#MyAppVersion}-setup
+OutputBaseFilename={#OutputFileName}
 SetupIconFile={#SetupIconFilePath}
 Compression=lzma
 SolidCompression=yes

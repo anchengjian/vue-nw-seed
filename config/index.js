@@ -52,6 +52,7 @@ module.exports = {
         issPath: resolve('./config/setup.iss'),
         files: path.resolve('./output', tmpJson.name + ' - v' + tmpJson.version),
         outputPath: resolve('./output/setup/'),
+        outputFileName: '${name}-${version}-${platform}-setup',
         resourcesPath: resolve('./build/setup_resources'),
         appPublisher: 'vue-nw-seed, Inc.',
         appURL: 'https://github.com/anchengjian/vue-nw-seed',
