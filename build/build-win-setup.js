@@ -12,21 +12,28 @@ var tmpJson = require(path.resolve(rootPath, './package.json'))
 var config = require(path.resolve(rootPath, 'config'))
 var setupOptions = config.build.nw.setup
 
-fs.readdir(setupOptions.files, function(err, files) {
-  if (err) throw err
+module.exports = function() {
+  const res = []
+  fs.readdir(setupOptions.files, function(err, files) {
+    if (err) throw err
 
-  files.forEach(function(fileName) {
-    if (!~fileName.indexOf('win')) return
+    files.forEach(function(fileName) {
+      if (!~fileName.indexOf('win')) return
 
-    const curPath = path.resolve(setupOptions.files, fileName)
-    fs.stat(curPath, function(err, stats) {
-      if (err || stats.isFile()) return
-      if (stats.isDirectory()) {
-        makeExeSetup(Object.assign({}, setupOptions, { files: curPath, platform: fileName }))
-      }
+      const curPath = path.resolve(setupOptions.files, fileName)
+      fs.stat(curPath, function(err, stats) {
+        if (err || !stats.isDirectory()) return
+
+        const options = Object.assign({}, setupOptions, { files: curPath, platform: fileName })
+        options.outputPath = options.outputPath || path.resolve(setupOptions.files, fileName + '-setup')
+
+        res.push(makeExeSetup(options))
+      })
     })
   })
-})
+
+  return Promise.all(res)
+}
 
 function makeExeSetup(opt) {
   const { issPath, files, outputPath, outputFileName, resourcesPath, appPublisher, appURL, appId, platform } = opt
@@ -66,6 +73,7 @@ function makeExeSetup(opt) {
 }
 
 function getOutputName(str, data) {
+  if (!str) return data.name
   return str.replace(/\$\{(.*?)\}/g, function(a, b) {
     return data[b] || b
   })

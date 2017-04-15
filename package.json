@@ -11,6 +11,7 @@
     "lint": "eslint --ext .js,.vue src"
   },
   "dependencies": {
+    "node-webkit-updater": "^0.3.3",
     "nw": "0.14.7-sdk",
     "vue": "^2.2.2",
     "vue-router": "^2.2.0"
@@ -67,6 +68,7 @@
     "last 2 Chrome versions"
   ],
   "main": "http://localhost:8080",
+  "manifestUrl": "/upgrade/upgrade.json",
   "window": {
     "title": "vue-nw-seed",
     "toolbar": false,

@@ -1,12 +1,15 @@
 // see http://vuejs-templates.github.io/webpack for documentation.
 var path = require('path')
 
-function resolve(dir) {
-  return path.join(__dirname, '..', dir)
+function resolve() {
+  return path.resolve.apply(path, [__dirname, '..'].concat(...arguments))
 }
 
 // `./package.json`
 var tmpJson = require(resolve('./package.json'))
+
+// var curReleasesPath = resolve('./releases', tmpJson.name + '-v' + tmpJson.version)
+var curReleasesPath = resolve('./releases', tmpJson.version)
 
 module.exports = {
   build: {
@@ -35,28 +38,34 @@ module.exports = {
       // manifest for nw
       // the fileds will merge with `./package.json` and build to `./dist/package.json` for NW.js
       // Manifest Format: http://docs.nwjs.io/en/latest/References/Manifest%20Format/
-      manifest: ['name', 'appName', 'version', 'description', 'author', { main: './index.html' }, 'window', 'nodejs', 'js-flags', 'node-remote'],
+      manifest: ['name', 'appName', 'version', 'description', 'author', { main: './index.html' }, 'manifestUrl', 'window', 'nodejs', 'js-flags', 'node-remote'],
       // see document: https://github.com/nwjs/nw-builder
       builder: {
         files: [resolve('./dist/**')],
-        platforms: ['win32'],
+        platforms: ['win32', 'osx64'],
         version: '0.14.7',
         flavor: 'normal',
         cacheDir: resolve('./node_modules/_nw-builder-cache/'),
-        buildDir: resolve('./output'),
-        zip: true,
-        winIco: resolve('./static/favicon.ico'),
-        buildType: 'versioned'
+        buildDir: resolve('./releases'),
+        winIco: resolve('./build/setup_resources/logo.ico'),
+        macIcns: resolve('./build/setup_resources/logo.icns'),
+        buildType: function() {
+          return this.appVersion
+        }
       },
       setup: {
         issPath: resolve('./config/setup.iss'),
-        files: path.resolve('./output', tmpJson.name + ' - v' + tmpJson.version),
-        outputPath: resolve('./output/setup/'),
-        outputFileName: '${name}-${version}-${platform}-setup',
+        // only one version path
+        files: curReleasesPath,
         resourcesPath: resolve('./build/setup_resources'),
         appPublisher: 'vue-nw-seed, Inc.',
         appURL: 'https://github.com/anchengjian/vue-nw-seed',
-        appId: '{{A448363D-3A2F-4800-B62D-8A1C4D8F1115}'
+        appId: '{{A448363D-3A2F-4800-B62D-8A1C4D8F1115}}'
+      },
+      upgrade: {
+        outputFile: resolve('./releases/upgrade.json'),
+        publicPath: 'http://localhost:8080/upgrade/',
+        files: [curReleasesPath]
       }
     }
   },
@@ -72,6 +81,10 @@ module.exports = {
     // (https://github.com/webpack/css-loader#sourcemaps)
     // In our experience, they generally work as expected,
     // just be aware of this issue when enabling this option.
-    cssSourceMap: false
+    cssSourceMap: false,
+    upgrade: {
+      publicPath: '/upgrade',
+      directory: 'releases'
+    }
   }
 }

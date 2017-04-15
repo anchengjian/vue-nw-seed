@@ -3,6 +3,9 @@ var path = require('path')
 var fs = require('fs')
 var util = require('util')
 
+var buildWinSetup = require('./build-win-setup.js')
+var buildUpgrade = require('./build-upgrade')
+
 var rootPath = path.resolve(__dirname, '../')
 
 // get config
@@ -19,7 +22,7 @@ config.build.nw.manifest.forEach(function(v, i) {
   else if (util.isObject(v)) manifest = util._extend(manifest, v)
 })
 
-fs.writeFile(manifestPath, JSON.stringify(manifest, null, '  '), 'utf-8', function(err, data) {
+fs.writeFile(manifestPath, JSON.stringify(manifest, null, '  '), 'utf-8', function(err) {
   if (err) throw err
 
   // start build app
@@ -32,6 +35,7 @@ fs.writeFile(manifestPath, JSON.stringify(manifest, null, '  '), 'utf-8', functi
 
     // build windows setup
     if (config.build.noSetup) return
-    if (~config.build.nw.builder.platforms.toString().indexOf('win')) require('./build-win-setup.js')
+    if (~config.build.nw.builder.platforms.toString().indexOf('win')) buildWinSetup().then(res => buildUpgrade(manifest))
+    else buildUpgrade(manifest)
   })
 })

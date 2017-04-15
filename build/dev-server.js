@@ -61,6 +61,15 @@ app.use(hotMiddleware)
 var staticPath = path.posix.join(config.dev.assetsPublicPath, config.dev.assetsSubDirectory)
 app.use(staticPath, express.static('./static'))
 
+// for upgrade server
+var upgrade = config.dev.upgrade
+if (upgrade && upgrade.publicPath && upgrade.directory) {
+  app.use(upgrade.publicPath, [function(req, res, next) {
+    console.log(req.url, JSON.stringify(req.headers))
+    next()
+  }, express.static(upgrade.directory)])
+}
+
 var uri = 'http://localhost:' + port
 
 devMiddleware.waitUntilValid(function() {

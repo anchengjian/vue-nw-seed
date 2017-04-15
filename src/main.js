@@ -6,6 +6,10 @@ import router from './router'
 
 Vue.config.productionTip = false
 
+// for auto update
+import { checkUpdate } from '@/utils/update.js'
+checkUpdate()
+
 /* eslint-disable no-new */
 new Vue({
   el: '#app',
