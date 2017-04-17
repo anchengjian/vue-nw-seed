@@ -11,25 +11,23 @@ var tmpJson = require(path.resolve(rootPath, './package.json'))
 // get config
 var config = require(path.resolve(rootPath, 'config'))
 var setupOptions = config.build.nw.setup
+var platforms = ['win32', 'win64']
 
 module.exports = function() {
   const res = []
-  fs.readdir(setupOptions.files, function(err, files) {
-    if (err) throw err
+  const files = fs.readdirSync(setupOptions.files)
 
-    files.forEach(function(fileName) {
-      if (!~fileName.indexOf('win')) return
+  files.forEach(function(fileName) {
+    if (!~platforms.indexOf(fileName)) return
 
-      const curPath = path.resolve(setupOptions.files, fileName)
-      fs.stat(curPath, function(err, stats) {
-        if (err || !stats.isDirectory()) return
+    const curPath = path.resolve(setupOptions.files, fileName)
+    const stats = fs.statSync(curPath)
+    if (!stats.isDirectory()) return
 
-        const options = Object.assign({}, setupOptions, { files: curPath, platform: fileName })
-        options.outputPath = options.outputPath || path.resolve(setupOptions.files, fileName + '-setup')
+    const options = Object.assign({}, setupOptions, { files: curPath, platform: fileName })
+    options.outputPath = options.outputPath || path.resolve(setupOptions.files, fileName + '-setup')
 
-        res.push(makeExeSetup(options))
-      })
-    })
+    res.push(makeExeSetup(options))
   })
 
   return Promise.all(res)

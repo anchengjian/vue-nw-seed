@@ -49,15 +49,15 @@ function makeUpgrade(manifest) {
     files.forEach(function(fileName) {
       var platform = platforms[fileName]
       if (!platform) return
-      upgradeJson.packages[platform.name] = { url: getPkgUrl(manifest, platform) }
+      upgradeJson.packages[platform.name] = { url: getPkgUrl(manifest, platform, fileName) }
     })
     makeJson(upgradeJson)
   })
 
 }
 
-function getPkgUrl(manifest, platform) {
-  return `${updCnf.publicPath}${manifest.version}/${platform.name}/${manifest.name}${platform.ext}`
+function getPkgUrl(manifest, platform, fileName) {
+  return `${updCnf.publicPath}${manifest.version}/${fileName}/${manifest.name}${platform.ext}`
 }
 
 function makeJson(json) {
@@ -66,5 +66,6 @@ function makeJson(json) {
 
   fs.writeFile(updCnf.outputFile, JSON.stringify(json, null, '  '), 'utf-8', function(err) {
     if (err) console.log(err)
+    console.log('\n', 'build upgrade.json in:\n', updCnf.outputFile, '\n')
   })
 }

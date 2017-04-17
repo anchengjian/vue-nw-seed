@@ -35,7 +35,7 @@ fs.writeFile(manifestPath, JSON.stringify(manifest, null, '  '), 'utf-8', functi
 
     // build windows setup
     if (config.build.noSetup) return
-    if (~config.build.nw.builder.platforms.toString().indexOf('win')) buildWinSetup().then(res => buildUpgrade(manifest))
+    if (~config.build.nw.builder.platforms.toString().indexOf('win')) buildWinSetup().then(() => buildUpgrade(manifest))
     else buildUpgrade(manifest)
   })
 })
