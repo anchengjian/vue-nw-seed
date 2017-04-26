@@ -42,7 +42,8 @@ module.exports = {
       // see document: https://github.com/nwjs/nw-builder
       builder: {
         files: [resolve('./dist/**')],
-        platforms: ['win32', 'osx64'],
+        // platforms: ['win32', 'osx64'],
+        platforms: ['win32'],
         version: '0.14.7',
         flavor: 'normal',
         cacheDir: resolve('./node_modules/_nw-builder-cache/'),

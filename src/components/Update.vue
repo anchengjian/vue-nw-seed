@@ -6,14 +6,11 @@
     </section>
     <section class="update-container" v-if="info">
       <h2>New update <small>version: {{info.version}}</small></h2>
-      <button type="button" class="update-btn" v-if="downloadPercentage < 100" :disabled="downloadPercentage !== -1" @click="showFileDialog">update</button>
+      <button type="button" class="update-btn" v-if="progress < 100" :disabled="progress >= 0" @click="showFileDialog">update</button>
       <input type="file" class="hidden" ref="fileInput" :nwsaveas="saveAsName" @change="startDownload">
     </section>
-    <p v-if="downloadPercentage >=0 && downloadPercentage < 100"> {{downloadPercentage}} %</p>
-    <div v-if="downloadPercentage >= 100">
-      <h3>Download complete</h3>
-      <p>Please open the executable file and cover the installation!</p>
-    </div>
+    <p v-if="progress === -2">download error</p>
+    <p v-if="progress >= 0">Download: {{progress}} %</p>
   </section>
 </template>
 
@@ -27,7 +24,7 @@
       return {
         info: null,
         jsonIsLoading: true,
-        downloadPercentage: -1
+        progress: -1  // init: -1, error: -2
       }
     },
     computed: {
@@ -46,27 +43,18 @@
         ev.target.value = ''
         if (!targetPath.trim()) return
 
-        this.downloadPercentage = 0
+        this.progress = 0
         const file = downloadHandle(targetPath, this.info)
 
+        file.on('data', num => { this.progress = Math.ceil(num * 100) })
+        file.on('error', () => { this.progress = -2 })
+
         file.on('end', filePath => {
-          if (timer) clearInterval(timer)
-          this.downloadPercentage = 100
+          this.progress = this.progress < 0 ? this.progress : 100
 
-          setTimeout(() => Shell.showItemInFolder(filePath), 100)
+          // open install file
+          setTimeout(() => Shell.openExternal(filePath), 100)
         })
-
-        file.on('error', err => {
-          if (timer) clearInterval(timer)
-          this.downloadPercentage = -1
-          console.error('update is error!', err)
-        })
-
-        // for progress bar, 5 minutes
-        const timer = setInterval(() => {
-          if (timer && this.downloadPercentage > 98) clearInterval(timer)
-          this.downloadPercentage += 1
-        }, 3000)
       }
     },
     created () {

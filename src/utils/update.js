@@ -40,28 +40,27 @@ export function checkUpdate () {
 export function downloadHandle (savePath, json) {
   const ev = new events.EventEmitter()
 
-  console.log(json.packages, platform)
-
   const uri = json.packages[platform].url
+  const totalSize = json.packages[platform].size
   const loadFile = fs.createWriteStream(savePath)
+  let loaded = 0
 
-  http.get(uri, res => {
-    if (res.statusCode < 200 || res.statusCode >= 300) return ev.emit('error', res.statusCode)
-    res.on('end', () => {
-      res.unpipe(loadFile)
-      ev.emit('end', savePath)
+  http
+    .get(uri, res => {
+      if (res.statusCode < 200 || res.statusCode >= 300) return ev.emit('error', res.statusCode)
+      res.on('end', () => {
+        loadFile.end()
+        loadFile.destroySoon()
+        ev.emit('end', savePath)
+      })
+      res.on('error', err => ev.emit('error', err.message))
+      res.on('data', chunk => {
+        loadFile.write(chunk)
+        loaded += chunk.length
+        ev.emit('data', loaded / totalSize)
+      })
     })
-    res.on('error', err => ev.emit('error', err.message))
-
-    res.pipe(loadFile)
-  })
+    .on('error', err => ev.emit('error', err.message))
 
   return ev
 }
-
-// const rootPath = path.dirname(process.execPath)
-// export function restartSelf(waitTime) {
-//   setTimeout(() => {
-//     require('child_process').spawn('restart.bat', [], { detached: true, cwd: rootPath })
-//   }, ~~waitTime || 2000)
-// }

@@ -49,15 +49,21 @@ function makeUpgrade(manifest) {
     files.forEach(function(fileName) {
       var platform = platforms[fileName]
       if (!platform) return
-      upgradeJson.packages[platform.name] = { url: getPkgUrl(manifest, platform, fileName) }
+
+      var filePath = getFilePath(manifest, platform, fileName)
+      var size = getFileSize(curPath, manifest, platform, fileName)
+      upgradeJson.packages[platform.name] = { url: updCnf.publicPath + filePath, size: size }
     })
     makeJson(upgradeJson)
   })
-
 }
 
-function getPkgUrl(manifest, platform, fileName) {
-  return `${updCnf.publicPath}${manifest.version}/${fileName}/${manifest.name}${platform.ext}`
+function getFilePath(manifest, platform, fileName) {
+  return manifest.version + '/' + fileName + '/' + manifest.name + platform.ext
+}
+
+function getFileSize(curPath, manifest, platform, fileName) {
+  return fs.statSync(path.resolve(curPath, fileName + '/' + manifest.name + platform.ext)).size
 }
 
 function makeJson(json) {
