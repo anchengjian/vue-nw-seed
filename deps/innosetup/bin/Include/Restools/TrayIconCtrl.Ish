@@ -1,0 +1,120 @@
+; -- trayiconctrl.iss --
+; restools
+; http://restools.hanzify.org
+; TrayIconCtrl.dll 为一个用于 Inno Setup 的 15.5 KB 的 托盘图标插件.
+; 这个托盘图标插件拥有目前 windows 系统托盘图标拥有的一切特性.
+; 可以说你们看见过的,没看见过的托盘图标效果在这里都已经展现了出来
+; 这是我目前所做的最复杂的一个插件, 希望大家喜欢
+
+; Ver 1.5 修正在某些 Windows 平台上(例如 Windows XP SP3)不能正常运行的问题。
+
+
+#ifndef _TRAYICONCTRL_ISH_
+  #Define _TRAYICONCTRL_ISH_ __PATHFILENAME__
+  #expr Plugin_Init
+
+  #define TrayIconCtrl_DLL "trayiconctrl.dll"
+
+[Files]
+Source: "{#PluginDir}\{#TrayIconCtrl_DLL}"; DestDir: {#Plugin_DestDir}; Flags: {#Plugin_FileFlags}
+
+[code]
+const
+  NIIF_NONE = 0;
+  NIIF_INFO = $1;
+  NIIF_WARNING = $2;
+  NIIF_ERROR = $3;
+
+#ifdef TIconList_Count
+  #define TIconList_Index
+  #sub TrayIconCtrl_Icons
+    Icon{#TIconList_Index}: UINT;
+  #endsub
+
+type
+// 如果你想传递更多的图标给插件，可以增加更多的 Icon 成员。
+  TIconList = record
+  #for {TIconList_Index = 1; TIconList_Index <= TIconList_Count; TIconList_Index++} TrayIconCtrl_Icons
+  end;
+#endif
+
+type
+// 回调函数参数格式声明
+  TMenuItemClickProc = procedure(MenuIndex: Integer);
+  TMenuPopupProc = procedure(PopMenu: LongWord; var bShow: Boolean);
+  TTrayIconMsgFunc = function(wParam, lParam: LongWord): Boolean;
+
+// 初始化 TrayIcon 插件
+function InitTrayIconCtrl(MainForm_Handle, WizardForm_Handle: THandle; uCallbackMessage: UINT;
+     szToolTip: String; icon: UINT; bHidden: BOOL; ShowTaskbarAppBtn: BOOL; MenuItems: String;
+     DefaultMnuIndex: Integer; MenuItemOnClickCallBack: TMenuItemClickProc;
+     MenuOnPopupCallBack: TMenuPopupProc; TrayIconMsgCallBack: TTrayIconMsgFunc): Boolean;
+     external 'InitTrayIconCtrl{#A}@{#Plugin_CodeDir(TrayIconCtrl_DLL)} {#Plugin_CodeFlags}';
+// MainForm_Handle : MainForm.Handle
+// WizardForm_Handle : WizardForm.Handle
+// uCallbackMessage : 消息标志
+// szToolTip : TrayIcon 的 ToolTip 提示, win9x: 64 字符限制, win2000 以上: 128 字符限制
+// icon : 显示的 Icon 的句柄. 如果设为 0 的时候默认使用安装程序的图标
+// bHidden : 是否立即显示 TrayIcon, 不需要由 ShowIcon 来显示
+// ShowTaskbarAppBtn : 是否显示安装程序在任务栏中的按钮
+// MenuItems : 所有菜单项的 Caption, 用 ";" 分隔, 如果要显示 ";" 用 "#3B" 代替, 设置为空字符串将会禁止菜单显示, 同时菜单回调函数也被忽略
+// DefaultMnuIndex : 默认菜单项, 当默认菜单项不是 -1 的时候, 双击 TrayIcon 的时候事件由用户设计，实际上就是双击的时候执行 MenuItemOnClickCallBack 某个指定的菜单单击事件
+// MenuItemOnClickCallBack : TrayIcon 右键菜单点击事件控制
+// MenuOnPopupCallBack : TrayIcon 右键菜单弹出前触发的回调事件
+// TrayIconMsgCallBack : 自定义消息事件，可以实现更丰富的控制
+
+// 卸载 TrayIcon 插件
+function UninitTrayIconCtrl(): Boolean; external 'UninitTrayIconCtrl@{#Plugin_CodeDir(TrayIconCtrl_DLL)} {#Plugin_CodeFlags}';
+
+// 隐藏 托盘图标
+function HideTrayIcon(): Boolean; external 'HideTrayIcon@{#Plugin_CodeDir(TrayIconCtrl_DLL)} {#Plugin_CodeFlags}';
+
+// 显示 托盘图标
+function ShowTrayIcon(): Boolean; external 'ShowTrayIcon@{#Plugin_CodeDir(TrayIconCtrl_DLL)} {#Plugin_CodeFlags}';
+
+#ifdef TIconList_Count
+// 为显示动态图标而为插件添加一组 图标 列。
+function SetIconList(pHIconList: TIconList; nNumIcons: UINT): Boolean; external 'SetIconList@{#Plugin_CodeDir(TrayIconCtrl_DLL)} {#Plugin_CodeFlags}';
+// pHIconList : 图标组
+// nNumIcons : 要添加多少个图标
+#endif
+
+// 显示动态图标动画
+function AnimateTrayIcon(nDelayMilliSeconds: UINT; nNumSeconds: Integer): Boolean;
+     external 'AnimateTrayIcon@{#Plugin_CodeDir(TrayIconCtrl_DLL)} {#Plugin_CodeFlags}';
+// nDelayMilliSeconds : 每个图标显示间隔时间, 这将影响动态速度
+// nNumSeconds : 循环显示时间(秒数), 当这里设置为 -1 时, 将会无限时间循环
+
+// 停止动态图标动画
+function StopAnimation(): Boolean; external 'StopAnimation@{#Plugin_CodeDir(TrayIconCtrl_DLL)} {#Plugin_CodeFlags}';
+
+// 把 WizardForm 最小化到托盘图标, 或者还原出现
+function ToggleWizardVisible(): Boolean; external 'ToggleWizardVisible@{#Plugin_CodeDir(TrayIconCtrl_DLL)} {#Plugin_CodeFlags}';
+
+// 显示漫画型气泡提示, 这个函数只能对 Windows 2000 以上系统有作用
+function ShowBalloon(szText, szTitle: String; dwIcon: DWORD; uTimeout: UINT; bWaitforPreMsg: Boolean): Boolean; 
+     external 'ShowBalloon{#A}@{#Plugin_CodeDir(TrayIconCtrl_DLL)} {#Plugin_CodeFlags}';
+// szText : 提示信息, 256 字符限制
+// szTitle : 提示信息标题, 64 字符限制
+// dwIcon : 提示信息中带有的图标
+//    NIIF_NONE = 0x00000000;     无图标
+//    NIIF_INFO = 0x00000001;     信息图标
+//    NIIF_WARNING = 0x00000002;  警告图标
+//    NIIF_ERROR = 0x00000003;    错误图标
+// uTimeout : 停留的时间 范围: 10 ~ 30 秒. 如果无任何鼠标动作时, 系统自动维持 60 秒
+// bWaitforPreMsg : 在 Win2000 中, 默认是要前一个消息消失后才会显示后一个消息, 这里设置为 False 的时候就直接替换前一个消息
+
+// 隐藏漫画型气泡提示, 这个函数只能对 Windows 2000 以上系统有作用
+function HideBalloon(): Boolean; external 'HideBalloon@{#Plugin_CodeDir(TrayIconCtrl_DLL)} {#Plugin_CodeFlags}';
+
+// WizardForm 是否已被最小化到系统托盘区
+function WizardFormInTray(): Boolean; external 'WizardFormInTray@{#Plugin_CodeDir(TrayIconCtrl_DLL)} {#Plugin_CodeFlags}';
+
+// 重新设定托盘图标插件的提示标签和图标
+function SetTrayIcon(szToolTip: String; icon: UINT): Boolean;
+     external 'SetTrayIcon{#A}@{#Plugin_CodeDir(TrayIconCtrl_DLL)} {#Plugin_CodeFlags}';
+
+
+#endif
+
+

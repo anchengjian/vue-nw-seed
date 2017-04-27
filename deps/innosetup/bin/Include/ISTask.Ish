@@ -1,0 +1,75 @@
+
+#ifndef _ISTASK_ISH_
+  #Define _ISTASK_ISH_ __PATHFILENAME__
+
+//Author      : WLDNA
+//Link        : http://www.wldna.com/
+//Description : .
+//Modified    : 2013-11-05 22:17:39
+//Tested Inno :
+//Usage       :
+
+  #expr Plugin_Init
+
+  #define IsTask_DLL "ISTask.dll"
+  #expr AddAutoPDirs( IsTask_DLL )
+
+[Files]
+Source: {#PluginDir}\{#IsTask_DLL}; DestDir: {#Plugin_DestDir}; Flags: {#Plugin_FileFlags}
+
+[Code]
+function RunTask(FileName: AnsiString; bFullpath: Boolean): Boolean;
+external 'RunTask@{#Plugin_CodeDir(IsTask_DLL)} {#Plugin_CodeFlags}';
+
+function KillTask(ExeFileName: AnsiString): Integer;
+external 'KillTask@{#Plugin_CodeDir(IsTask_DLL)} {#Plugin_CodeFlags}';
+
+function RunTasks(Tasks: AnsiString; bFullpath: Boolean; CheckAll: Boolean): Boolean;
+var
+  sl: TStringList;
+  i: Integer;
+begin
+  Result := False;
+  sl := TStringList.Create;
+  try
+    sl.Text := Tasks;
+    if sl.Count > 0 then
+      for i := 0 to sl.Count -1 do 
+      begin
+        if CheckAll then
+        begin
+          if i = 0 then Result := RunTask(sl[i], bFullpath)
+          else
+            Result := Result and RunTask(sl[i], bFullpath);
+        end
+        else
+        if RunTask(sl[i], bFullpath) then
+        begin
+          Result := True;
+          Break;
+        end;
+      end;
+  finally
+    sl.Free;
+  end;
+end;
+
+procedure KillTasks(Tasks: AnsiString);
+var
+  sl: TStringList;
+  i: Integer;
+begin
+  sl := TStringList.Create;
+  try
+    sl.Text := Tasks;
+    if sl.Count > 0 then
+      for i := 0 to sl.Count -1 do KillTask(sl[i]);
+  finally
+    sl.Free;
+  end;
+end;
+
+[/Code]
+
+#endif
+

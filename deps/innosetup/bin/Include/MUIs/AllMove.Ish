@@ -1,0 +1,81 @@
+#ifndef _ALLMOVE_ISH_
+  #Define _ALLMOVE_ISH_ __PATHFILENAME__
+
+//Author      : WLDNA
+//Link        : http://www.wldna.com/
+//Description : Drag and drop with TLabel
+//Modified    : 2013-11-05 22:17:39
+//Tested Inno :
+//Usage       :
+//  AllMouseMove();
+//  OnMouseMove := @lbl_MouseMove;
+
+[Code]
+const
+  WM_SYSCOMMAND = $0112;
+
+function ReleaseCapture(): Longint;
+external 'ReleaseCapture@user32.dll stdcall';
+
+//任意位置拖动
+procedure lbl_MouseMove(Sender: TObject; Shift: TShiftState; X: Integer; Y: Integer);
+var
+  Ctrl: TControl;
+begin
+  if Sender is TLabel then
+  begin
+    Ctrl := TLabel(Sender).Parent;
+
+    repeat
+      if Assigned(Ctrl.Parent) then
+        Ctrl := Ctrl.Parent;
+    until Ctrl is TForm;
+
+    ReleaseCapture;
+    SendMessage(TForm(Ctrl).Handle, WM_SYSCOMMAND, $F012, 0)
+  end;
+end;
+
+procedure NewMoveLbl(AOwner: TComponent);
+begin
+  { lbl_Move }
+  with TLabel.Create(AOwner) do
+  begin
+    Parent := TWinControl(AOwner);
+    Align := alClient;
+    Transparent := True;
+    OnMouseMove := @lbl_MouseMove;
+    Caption := '';
+    SendToBack;
+  end;
+end;
+
+//对所有控件添加 移动功能
+procedure AllMouseMove();
+var
+  i: integer;
+begin
+  if IsUninstaller then
+  begin
+    NewMoveLbl(UninstallProgressForm);
+
+    for i := 0 to UninstallProgressForm.InnerNotebook.PageCount - 1 do
+      NewMoveLbl(UninstallProgressForm.InnerNotebook.Pages[i]);
+
+    for i := 0 to UninstallProgressForm.OuterNotebook.PageCount - 1 do
+      NewMoveLbl(UninstallProgressForm.OuterNotebook.Pages[i]);
+  end
+  else
+  begin
+    NewMoveLbl(WizardForm);
+
+    for i := 0 to WizardForm.InnerNotebook.PageCount - 1 do
+      NewMoveLbl(WizardForm.InnerNotebook.Pages[i]);
+
+    for i := 0 to WizardForm.OuterNotebook.PageCount - 1 do
+      NewMoveLbl(WizardForm.OuterNotebook.Pages[i]);
+  end;
+end;
+
+[/Code]
+#endif

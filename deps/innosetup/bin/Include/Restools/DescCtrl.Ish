@@ -1,0 +1,26 @@
+; restools
+; http://restools.hanzify.org
+; 看见很多人需要，就整个出来爽爽吧
+; 时间仓促，所以编程可能会有点谬误，如有错误可以提出
+; descctrl.dll 为一个 6.5 KB 的组件描述插件
+
+#ifndef _DESCCTRL_ISH_
+  #Define _DESCCTRL_ISH_ __PATHFILENAME__
+  #expr Plugin_Init
+
+  #define DescCtrl_DLL "descctrl.dll"
+
+[Files]
+Source: "{#PluginDir}\{#DescCtrl_DLL}"; DestDir: {#Plugin_DestDir}; Flags: {#Plugin_FileFlags}
+
+[Code]
+function enabledesc(ComponentsListHandle: HWND; DescLabelHandle: HWND; DescStrings: PAnsiChar): BOOL;
+external 'enabledesc@{#Plugin_CodeDir(DescCtrl_DLL)} {#Plugin_CodeFlags}';
+//ComponentsListHandle 组件框句柄
+//DescLabelHandle 描述TNewStaticText句柄
+//DescStrings 描述文字 英文分号分割“;”，如果描述中必须要有英文分号，请用“#3B”代替。
+
+function disabledesc(): BOOL; external 'disabledesc@{#Plugin_CodeDir(DescCtrl_DLL)} {#Plugin_CodeFlags}';
+
+#endif
+

@@ -1,0 +1,461 @@
+#ifndef _BOTVA2_VISUAL_ISH_
+  #Define _BOTVA2_VISUAL_ISH_ __PATHFILENAME__
+
+//Author      : WLDNA
+//Link        : http://www.wldna.com/
+//Description : Turn components to Botva2 style.
+//Modified    : 2013-11-05 22:17:39
+//Tested Inno :
+//Usage       :
+//function TransBtnImg(fBtn: TButton; fImg: string; fShadowWidth: Integer; fCallback: TBtnEventProc): HWND;
+//function TransChkImg(fChk: TCheckBox; fImg: string; fWidth, fHeight, fSpace: Integer; fCallback: TBtnEventProc): HWND;
+//function TransGrpBtnImg(var fGroupBtn: TGroupBtn; farr_Radio: array of TRadioButton; fImg: string; fWidth, fHeight, fSpace: Integer; fCallback: TBtnEventProc): TGroupBtn;
+//function TransRadioImg(fChk: TRadioButton; fImg: string; fWidth, fHeight, fSpace: Integer; fCallback: TBtnEventProc): HWND;
+
+
+[Code]
+//const
+//  WM_LBUTTONDOWN = 513;
+//  WM_LBUTTONUP = 514;
+//  MK_LBUTTON = 1;
+
+type
+  TGroupBtn = record
+    Btns: array of TRadioButton;
+    hBtns: array of HWND;
+    Parent: TObject;
+    Index: Integer;
+    AllowCancel: Boolean;
+  end;
+  
+  TImgBtn = record
+    Btns: array of TObject;
+    hBtns: array of HWND;
+    Parent: TObject;
+  end;
+
+var
+  ImgBtn: TImgBtn;
+  GroupBtns: array of TGroupBtn;
+
+function GetBtnIdx(Btn: TObject): Integer;
+var
+  i: Integer;
+begin
+  Result := -1;
+  if (TComponent(Btn).Tag >= 0) and (TComponent(Btn).Tag < GetArrayLength(ImgBtn.Btns)) and
+    (ImgBtn.Btns[TComponent(Btn).Tag] = Btn) then
+  begin
+    Result := TComponent(Btn).Tag;
+  end
+  else
+  begin
+    if GetArrayLength(ImgBtn.Btns) > 0 then
+      for i := 0 to GetArrayLength(ImgBtn.Btns) - 1 do
+      begin
+        if Btn = ImgBtn.Btns[i] then
+        begin
+          Result := i;
+          Break;
+        end;
+      end;
+  end;
+end;
+
+procedure UpdateBtn(Btn: TObject; hBtn: HWND);
+var
+  OldLeft, OldTop, OldWidth, OldHeight: Integer;
+begin
+  if hBtn = 0 then
+  begin
+    if GetBtnIdx(Btn) <> -1 then
+      hBtn := ImgBtn.hBtns[GetBtnIdx(Btn)]
+    else
+      Exit;
+  end;
+
+  BtnGetPosition(hBtn, OldLeft, OldTop, OldWidth, OldHeight);
+  if Btn is TButton then
+  begin
+    with TButton(Btn) do
+    begin
+      BtnSetText(hBtn, PAnsiChar(Caption));
+//      if (OldLeft <> Left) or (OldTop <> Top) or (OldWidth <> Width) or (OldHeight <> Height) then
+//        BtnSetPosition(hBtn, Left, Top, Width, Height);
+    end;
+  end
+  else if (Btn is TCheckBox) then
+  begin
+    with TCheckBox(Btn) do
+    begin
+      Checked := BtnGetChecked(hBtn);
+
+//      if (OldLeft <> Left) or (OldTop <> Top) then
+//        BtnSetPosition(hBtn, Left, Top, OldWidth, OldHeight);
+    end;
+
+    if Assigned(TCheckBox(Btn).Parent.FindComponent('Lbl_' + TCheckBox(Btn).Name)) then
+    begin
+      with TLabel(TCheckBox(Btn).Parent.FindComponent('Lbl_' + TCheckBox(Btn).Name)) do
+      begin
+        Caption := TCheckBox(Btn).Caption;
+        Cursor := TCheckBox(Btn).Cursor;
+        Visible := TCheckBox(Btn).Visible;
+        Enabled := TCheckBox(Btn).Enabled;
+
+//        Left := Left - (OldLeft + OldWidth) + TCheckBox(Btn).Left;
+//        Top := Top - (OldTop + OldHeight) + TCheckBox(Btn).Top;
+      end;
+    end;
+  end
+  else if (Btn is TRadioButton) then
+  begin
+    with TRadioButton(Btn) do
+    begin
+      Checked := BtnGetChecked(hBtn);
+
+//      if (OldLeft <> Left) or (OldTop <> Top) then
+//        BtnSetPosition(hBtn, Left, Top, OldWidth, OldHeight);
+    end;
+
+    if Assigned(TRadioButton(Btn).Parent.FindComponent('Lbl_' + TRadioButton(Btn).Name)) then
+    begin
+      with TLabel(TRadioButton(Btn).Parent.FindComponent('Lbl_' + TRadioButton(Btn).Name)) do
+      begin
+        Caption := TRadioButton(Btn).Caption;
+        Cursor := TRadioButton(Btn).Cursor;
+        Visible := TRadioButton(Btn).Visible;
+        Enabled := TRadioButton(Btn).Enabled;
+
+//        Left := Left - (OldLeft + OldWidth) + TRadioButton(Btn).Left;
+//        Top := Top - (OldTop + OldHeight) + TRadioButton(Btn).Top;
+      end;
+    end;
+  end;
+
+  with TControl(Btn) do
+  begin
+    BtnSetEnabled(hBtn, Enabled);
+    BtnSetVisibility(hBtn, Visible);
+  end;
+
+  BtnRefresh(hBtn);
+end;
+//==========================================================================
+
+procedure UpdateAllBtns();
+var
+  i: Integer;
+begin
+  if GetArrayLength(ImgBtn.Btns) > 0 then
+    for i := 0 to GetArrayLength(ImgBtn.Btns) - 1 do
+    begin
+      UpdateBtn(ImgBtn.Btns[i], ImgBtn.hBtns[i]);
+    end;
+end;
+//==========================================================================
+
+procedure AddImgBtn(Btn: Tobject; hBtn: HWND);
+var
+  idx: Integer;
+begin
+  idx := GetArrayLength(ImgBtn.hBtns);
+
+  SetArrayLength(ImgBtn.Btns, idx + 1);
+  SetArrayLength(ImgBtn.hBtns, idx + 1);
+  ImgBtn.Btns[idx] := Btn;
+  ImgBtn.hBtns[idx] := hBtn;
+
+  TComponent(Btn).Tag := idx;
+end;
+//==========================================================================
+
+procedure ImgClick(Btn: Tobject; hBtn: HWND);
+begin
+  if Assigned(Btn) then
+  begin
+    if Btn is TButton then
+    begin
+      PostMessage(TButton(Btn).Handle, 513, 1, 0);
+      PostMessage(TButton(Btn).Handle, 514, 1, 0);
+    end;
+    UpdateBtn(Btn, hBtn);
+  end;
+end;
+//==========================================================================
+
+function TransBtnImg(fBtn: TButton; fImg: string; fShadowWidth: Integer; fCallback: TBtnEventProc): HWND;
+begin
+  with fBtn do
+  begin
+    Result := BtnCreate(Parent.Handle, Left, Top, Width, Height, fImg, fShadowWidth, False);
+//    Tag := Width;
+    UpdateBtn(fBtn, Result);
+    BtnSetFont(Result,Font.Handle);
+    BtnSetFontColor(Result, Font.Color, Font.Color, Font.Color, Font.Color);
+    BtnSetEvent(Result, BtnClickEventID, WrapBtnCallback(fCallback, 1));
+    Left := - Width * 2;
+//    Width := 0;
+  end;
+
+  AddImgBtn(fBtn, Result);
+end;
+//==========================================================================
+
+procedure ImgBtnClick(hBtn: HWND);
+var
+  i: Integer;
+begin
+  for i := 0 to GetArrayLength(ImgBtn.hBtns) - 1 do
+  begin
+    if ImgBtn.hBtns[i] = hBtn then Break
+  end;
+
+  ImgClick(ImgBtn.Btns[i], hBtn);
+  UpdateBtn(ImgBtn.Btns[i], hBtn);
+end;
+//==========================================================================
+
+procedure Chk_ImgLblClick(Sender: TObject);
+begin
+  BtnSetChecked(TLabel(Sender).Tag, not BtnGetChecked(TLabel(Sender).Tag));
+  ImgBtnClick(TLabel(Sender).Tag);
+end;
+
+function TransChkImg(fChk: TCheckBox; fImg: string; fWidth, fHeight, fSpace: Integer; fCallback: TBtnEventProc): HWND;
+begin
+  with fChk do
+  begin
+    Result := BtnCreate(Parent.Handle, Left - (fWidth - Height) / 2, Top - (fHeight - Height) / 2, fWidth, fHeight, fImg, 0, True);
+    BtnSetChecked(Result, Checked);
+    BtnSetFont(Result, Font.Handle);
+    BtnSetFontColor(Result, Font.Color, Font.Color, Font.Color, Font.Color);
+  end;
+
+  with TLabel.Create(fChk.Parent) do
+  begin
+    Parent := fChk.Parent;
+    if fChk.Name <> '' then Name := 'Lbl_' + fChk.Name;
+    Transparent := True;
+    Caption := fChk.Caption;
+    Left := fChk.Left + fWidth + fSpace;
+    Top := fChk.Top + ( fChk.Height - Height ) / 2;
+    Font := fChk.Font;
+    Color := fChk.Color;
+    AutoSize := True;
+#ifdef _ALLMOVE_ISH_
+    OnMouseMove := @lbl_MouseMove;
+#endif
+    OnClick := @Chk_ImgLblClick;
+    Tag := Result;
+  end;
+
+  with fChk do
+  begin
+    Left := - Width * 2;
+//    Width := 0;
+  end;
+
+  BtnSetEvent(Result, BtnClickEventID, WrapBtnCallback(fCallback, 1));
+
+  AddImgBtn(fChk, Result);
+end;
+//==========================================================================
+
+function ImgGroupClick(var fGroupBtn: TGroupBtn; hBtn: HWND): Boolean;
+var
+  i: Integer;
+  Btn: TObject;
+begin
+  Result := False;
+
+  for i := 0 to GetArrayLength(fGroupBtn.Btns) - 1 do
+  begin
+    if fGroupBtn.hBtns[i] = hBtn then
+    begin
+      Btn := fGroupBtn.Btns[i];
+
+      if Assigned(Btn) then
+      begin
+        Result := True;
+
+        if (not fGroupBtn.AllowCancel) and (fGroupBtn.Index = i) then
+          BtnSetChecked(fGroupBtn.hBtns[fGroupBtn.Index],  True)
+        else
+        if fGroupBtn.Index <> -1 then
+          BtnSetChecked(fGroupBtn.hBtns[fGroupBtn.Index],  False);
+
+        ImgClick(Btn, hBtn);
+
+        if fGroupBtn.Index <> -1 then
+        begin
+          BtnSetChecked(fGroupBtn.hBtns[fGroupBtn.Index],  fGroupBtn.Btns[fGroupBtn.Index].Checked);
+          BtnRefresh(fGroupBtn.hBtns[fGroupBtn.Index]);
+        end;
+
+        if fGroupBtn.Btns[i].Checked then
+        begin
+          fGroupBtn.Index := i;
+          BtnSetChecked(fGroupBtn.hBtns[fGroupBtn.Index],  fGroupBtn.Btns[fGroupBtn.Index].Checked);
+          BtnRefresh(fGroupBtn.hBtns[fGroupBtn.Index]);
+        end;
+      end;
+
+      Break;
+    end;
+  end;
+
+end;
+
+procedure ImgGroupBtnClick(hBtn: HWND);
+var
+  i: Integer;
+begin
+  for i := 0 to GetArrayLength(GroupBtns) - 1 do
+    if ImgGroupClick(GroupBtns[i], hBtn) then Break;
+end;
+
+procedure Radio_ImgLblClick(Sender: TObject);
+begin
+  BtnSetChecked(TLabel(Sender).Tag, not BtnGetChecked(TLabel(Sender).Tag));
+  ImgGroupBtnClick(TLabel(Sender).Tag);
+end;
+
+function TransRadioImg(fChk: TRadioButton; fImg: string; fWidth, fHeight, fSpace: Integer; fCallback: TBtnEventProc): HWND;
+begin
+  with fChk do
+  begin
+    Result := BtnCreate(Parent.Handle, Left - (fWidth - Height) / 2, Top - (fHeight - Height) / 2, fWidth, fHeight, fImg, 0, True);
+    BtnSetChecked(Result, Checked);
+    BtnSetFont(Result, Font.Handle);
+    BtnSetFontColor(Result, Font.Color, Font.Color, Font.Color, Font.Color);
+  end;
+
+  with TLabel.Create(fChk.Parent) do
+  begin
+    Parent := fChk.Parent;
+    if fChk.Name <> '' then Name := 'Lbl_' + fChk.Name;
+    Transparent := True;
+    Caption := fChk.Caption;
+    Left := fChk.Left + fWidth + fSpace;
+    Top := fChk.Top + ( fChk.Height - Height ) / 2;
+    Font := fChk.Font;
+    Color := fChk.Color;
+    AutoSize := True;
+#ifdef _ALLMOVE_ISH_
+    OnMouseMove := @lbl_MouseMove;
+#endif
+    OnClick := @Radio_ImgLblClick;
+    Tag := Result;
+  end;
+
+  with fChk do
+  begin
+    Left := - Width * 2;
+//    Width := 0;
+  end;
+
+  BtnSetEvent(Result, BtnClickEventID, WrapBtnCallback(fCallback, 1));
+end;
+//==========================================================================
+
+function TransGrpBtnImg(var fGroupBtn: TGroupBtn; farr_Radio: array of TRadioButton; fImg: string; fWidth, fHeight, fSpace: Integer; fCallback: TBtnEventProc): TGroupBtn;
+var
+  i : integer;
+begin
+  SetArrayLength(fGroupBtn.Btns, GetArrayLength(farr_Radio));
+  SetArrayLength(fGroupBtn.hBtns, GetArrayLength(farr_Radio));
+  fGroupBtn.Parent := farr_Radio[0].Parent;
+  fGroupBtn.Index := -1;
+
+  for i := 0 to GetArrayLength(farr_Radio) - 1 do
+  begin
+    farr_Radio[i].Tag := i;
+
+    fGroupBtn.Btns[i] := farr_Radio[i];
+    fGroupBtn.hBtns[i] := TransRadioImg(farr_Radio[i], fImg, fWidth, fHeight, fSpace, fCallback);
+    if farr_Radio[i].Checked then fGroupBtn.Index := i;
+  end;
+
+  SetArrayLength(GroupBtns, GetArrayLength(GroupBtns) + 1);
+  GroupBtns[GetArrayLength(GroupBtns) - 1] := fGroupBtn;
+end;
+
+procedure FreeImgBtn();
+begin
+  if GetArrayLength(ImgBtn.Btns) > 0 then
+  begin
+    SetArrayLength( ImgBtn.Btns, 0 );
+    SetArrayLength( ImgBtn.hBtns, 0 );
+  end;
+end;
+
+procedure FreeGroupBtn();
+var
+  i: Integer;
+begin
+  if GetArrayLength(GroupBtns) > 0 then
+    for i := 0 to GetArrayLength(GroupBtns) - 1 do
+    begin
+      SetArrayLength( GroupBtns[i].Btns, 0 );
+      SetArrayLength( GroupBtns[i].hBtns, 0 );
+    end;
+end;
+//===============================================================================================
+
+function BackImg(fObj, fParent: TWinControl; Stretch: boolean; fImg: string): HWND;
+var
+  fTop, fLeft, fHeight, fWidth: Integer;
+  fCtrl: TWinControl;
+begin
+  if fObj = fParent then
+  begin
+    fLeft := 0;
+    fTop := 0;
+    fHeight := fObj.ClientHeight;
+    fWidth := fObj.ClientWidth;
+  end
+  else
+  begin
+    fLeft := - fObj.Left;
+    fTop := - fObj.Top;
+    fHeight := fParent.ClientHeight;
+    fWidth := fParent.ClientWidth;
+
+    if Assigned(fObj.Parent) then
+    begin
+      fCtrl := fObj;
+      repeat
+        fCtrl := fCtrl.Parent;
+        fLeft := - fCtrl.Left - fLeft;
+        fTop := - fCtrl.Top - fTop;
+        if not Assigned(fCtrl.Parent) then break;
+      until fCtrl.Parent = fParent;
+    end;
+  end;
+
+  Result := ImgLoad(fObj.Handle, fImg, fLeft, fTop, fWidth, fHeight, Stretch, True);
+  ImgApplyChanges( fObj.Handle );
+end;
+
+
+procedure AllBackImg(Stretch: boolean; fImg: string);
+var
+  i: Integer;
+begin
+  BackImg(WizardForm, WizardForm, Stretch, fImg);
+
+  for i := 0 to WizardForm.OuterNotebook.PageCount - 1 do
+    BackImg(WizardForm.OuterNotebook.Pages[i], WizardForm, Stretch, fImg);
+
+  for i := 0 to WizardForm.InnerNotebook.PageCount - 1 do
+    BackImg(WizardForm.InnerNotebook.Pages[i], WizardForm, Stretch, fImg);
+end;
+
+[/Code]
+#endif
+
+
+
+
+

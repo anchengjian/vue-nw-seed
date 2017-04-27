@@ -1,0 +1,56 @@
+; -- test.iss --
+; restools
+; http://restools.hanzify.org
+; gifctrl.dll 为一个用于 Inno Setup 的 13 KB 的 gif 显示插件，同样可以显示 BMP 和 JPEG。
+
+; V2 增强函数，可以同时显示 16 个 GIF 图片。
+
+#ifndef _GIFCTRL_ISH_
+  #Define _GIFCTRL_ISH_ __PATHFILENAME__
+  #expr Plugin_Init
+
+  #define GifCtrl_DLL "gifctrl.dll"
+
+[Files]
+Source: "{#PluginDir}\{#GifCtrl_DLL}"; DestDir: {#Plugin_DestDir}; Flags: {#Plugin_FileFlags}
+
+[code]
+const
+   HALIGN_CENTER = 0; //水平居中
+   HALIGN_LEFT = 1;   //水平靠左
+   HALIGN_RIGHT = 2;  //水平靠右
+
+   VALIGN_CENTER = 0; //垂直居中
+   VALIGN_TOP = 1;    //垂直靠上
+   VALIGN_BOTTOM = 2; //垂直靠下
+
+   FIT_NONE = 0;      //不适应窗口
+   FIT_WIDTH = 1;     //适应窗口宽度
+   FIT_HEIGHT = 2;    //适应窗口高度
+   FIT_BOTH = 3;      //适应窗口宽度和高度
+   
+   CLR_INVALID = $FFFFFFFF; //自动取容器左上角的颜色作为底色，如果取色失败，用按钮颜色代替。
+
+// 创建 Gif 窗口
+function NewGifbWnd(hWndParent: HWND; X, Y, nWidth, nHeight: Integer): HWND; external 'newgifwnd@{#Plugin_CodeDir(GifCtrl_DLL)} {#Plugin_CodeFlags}';
+
+// 释放 Gif 窗口
+function FreeGifWnd(hWndGif: HWND): Boolean; external 'freegifwnd@{#Plugin_CodeDir(GifCtrl_DLL)} {#Plugin_CodeFlags}';
+
+// 设置 Gif 窗口的父窗口
+function GifWndSetParent(hWndGif: HWND; hWndParent: HWND): Boolean; external 'gifwndsetparent@{#Plugin_CodeDir(GifCtrl_DLL)} {#Plugin_CodeFlags}';
+
+// 设置 Gif 窗口的位置大小
+function GifWndSetBounds(hWndGif: HWND; X, Y, nWidth, nHeight: Integer): Boolean; external 'gifwndsetbounds@{#Plugin_CodeDir(GifCtrl_DLL)} {#Plugin_CodeFlags}';
+
+// 载入图片，并设置图片显示位置
+function GifWndLoadFromFile(hWndGif: HWND; HAlign, VAlign: Integer; BGColor: DWord; Fit: integer; GifFileName: PAnsiChar): Boolean; external 'gifwndloadfromfile@{#Plugin_CodeDir(GifCtrl_DLL)} {#Plugin_CodeFlags}';
+// 第1 次载入需要指定图片文件“GifFileName”，然后在需要重新载入另外图片的时候重新指定另外的图片文件，重新调整 Align 位置时也需要调用此函数，
+// 但是如果只是为了调整 Align 而不想重新载入一次 GifFileName 文件，只需要把 GifFileName 设置为空字符串就可以达到只调整位置，不重载文件。
+
+// 释放所有 Gif 窗口
+function FreeAllGifWnd(): Boolean; external 'freeallgifwnd@{#Plugin_CodeDir(GifCtrl_DLL)} {#Plugin_CodeFlags}';
+
+[/Code]
+
+#endif

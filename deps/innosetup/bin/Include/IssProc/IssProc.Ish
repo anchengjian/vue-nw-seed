@@ -1,0 +1,124 @@
+#ifndef _ISSPROC_ISH_
+  #Define _ISSPROC_ISH_ __PATHFILENAME__
+  #expr Plugin_Init
+  
+  #define IssProc_DLL "IssProc.dll"
+
+[Files]
+Source: {#PluginDir}\{#IssProc_DLL}; DestDir: {#Plugin_DestDir}; Flags: {#Plugin_FileFlags}
+Source: {#IncludeDir}\IssProc\IssProcLanguage.ini; DestDir: {#Plugin_DestDir}; Flags: {#Plugin_FileFlags}
+
+[Code]
+//********************************************************************************************************************************************
+// IssFindModule function returns: 0 if no module or file in use found; 1 if cancel pressed; 2 if ignore pressed; -1 if an error occured
+//
+//  hWnd        = main wizard window handle.
+//
+//  Modulename  = module or file name(s) to check. You can use a full path to a DLL/EXE/OCX or wildcard file name/path.
+//
+//                 Example1 : Modulename='*mymodule.dll';     -  will search in any path for mymodule.dll
+//                 Example2 : Modulename=ExpandConstant('{app}\mymodule.dll');     -  will search for mymodule.dll only in {app} folder (the application directory)
+//                 Example3 : Modulename=ExpandConstant('{app}\mymodule.dll;*myApp.exe');   - just like Example2 + search for myApp.exe regardless of his path.
+//                 Example4 with IssEnableAnyFileInUseCheck set to {app} folder: sModuleName=ExpandConstant('{app}*');  - will search for any file type that is in use in the {app} folder
+//
+//  Language    = files in use language dialog. Set this value to empty '' and default english will be used
+//                ( see and include IssProcLanguage.ini if you need custom text or other language)
+//
+//  Silent      = silent mode : set this var to true if you don't want to display the files in use dialog.
+//                When Silent is true IssFindModule will return 1 if it founds the Modulename or 0 if nothing found
+//
+//  CanIgnore   = set this var to false to Disable the Ignore button forcing the user to close those applications before continuing
+//                set this var to true to Enable the Ignore button allowing the user to continue without closing those applications
+//******************************************************************************************************************************************
+
+// IssFindModule called
+function IssFindModule(hWnd: Integer; Modulename: PAnsiChar; Language: PAnsiChar; Silent: Boolean; CanIgnore: Boolean ): Integer;
+external 'IssFindModule@{#Plugin_CodeDir(IssProc_DLL)} {#Plugin_CodeFlags}';
+
+
+//********************************************************************************************************************************************
+//  IssEnableAnyFileInUseCheck function extends the IssFindModule function to check for any file type in use (not just modules like exe,dll,ocx etc).
+//
+//  Folder   =  narrow down the search only in a specified folder for faster results.
+//				To search for all opened files set Folder to an empty string
+//
+// *** NOTES ***
+//  You must call IssEnableAnyFileInUseCheck before the actual search with IssFindModule if you want to enable any file in use check.
+//  Enabling any file in use check will slow down the detection. To speed up the detection narrow down the search only in a specified folder
+//  by passing to 'Folder' variable a folder path and then adding this folder with a file to check to IssFindModule.
+//  If IssEnableAnyFileInUseCheck is not used then the IssFindModule function will search only for executable files like exe, dll, ocx etc)
+//  Common use: IssEnableAnyFileInUseCheck (ExpandConstant('{app}')) - search for any file type in use only where the application is or it will be installed.
+//
+// *** EXAMPLES ***
+//
+// Using IssFindModule with IssEnableAnyFileInUseCheck to :
+//
+//  - check for any files in use from the specified  folder:
+//
+//    IssEnableAnyFileInUseCheck('C:\myFolder\mySubFolder');   //narrow down the search only in this folder for faster results
+//    sModuleName :=ExpandConstant('C:\myFolder\mySubFolder*');
+//    nCode:=IssFindModule(hWnd,sModuleName,'en',false,true);
+//
+//  - check for any files in use from the application installed folder, also check if 'dummy_lib.dll' is in use by any application :
+//
+//    IssEnableAnyFileInUseCheck(ExpandConstant('{app}'));   //narrow down the search only for application folder for faster results
+//    sModuleName :=ExpandConstant('{app}*;*dummy_lib.dll');
+//    nCode:=IssFindModule(hWnd,sModuleName,'en',false,true);
+//
+//  - check if a specified file is in use:
+//
+//   IssEnableAnyFileInUseCheck(''); //search will not be narrowed down to a folder, it will be a bit slow
+//   sModuleName :='*MyFile.docx';  //you can add the full qualified path here (ex: 'c:\temp\MyFile.docx'), or a partial path  ('*MyFolder\MyFile.docx')
+//   nCode:=IssFindModule(hWnd,sModuleName,'en',false,true); // if the file *MyFile.docx from any folder is found in use, the dialog to close the application that is using it will be displayed
+//
+//******************************************************************************************************************************************
+
+//Call this to enable search for any in use file type
+function IssEnableAnyFileInUseCheck(Folder: PAnsiChar): Integer;
+external 'IssEnableAnyFileInUseCheck@{#Plugin_CodeDir(IssProc_DLL)} {#Plugin_CodeFlags}';
+
+//Register for commercial use
+function IssRegister(rName: PAnsiChar; rKey: PAnsiChar): Integer;
+external 'IssRegister@{#Plugin_CodeDir(IssProc_DLL)} {#Plugin_CodeFlags}';
+
+function AutoIssProc(Modulename: PAnsiChar; Language: PAnsiChar; Silent: Boolean; CanIgnore: Boolean ): Boolean;
+var
+  hWnd: Integer;
+  sCurLanguage: String;
+  nCode: Integer;                                                       { IssFindModule returns: 0 if no module found; 1 if cancel pressed; 2 if ignore pressed; -1 if an error occured }
+begin
+  Result := false;
+
+  PDir('IssProcLanguage.ini');                                             { extract extra language file - you don't need to add this line if you are using english only }
+  PDir('{#IssProc_DLL}');                                                  { extract extra language file - you don't need to add this line if you are using english only }
+
+  if Language <> nil then sCurLanguage := Language
+  else
+  begin
+    if IsUninstaller then
+    begin
+      hWnd := 0
+      sCurLanguage := Copy(ExpandConstant('{language}'),0,2) + 'u';                 { extract first 2 characters from current setup language name }
+    end
+    else
+    begin
+      hWnd := StrToInt(ExpandConstant('{wizardhwnd}'));                     { get main wizard handle }
+      sCurLanguage := Copy(ExpandConstant('{language}'),0,2);                 { extract first 2 characters from current setup language name }
+    end;
+  end;
+
+  //IssRegister ('name','key');                                            { use your commercial license before using IssFindModule }
+  //IssEnableAnyFileInUseCheck(ExpandConstant('{app}'));
+  nCode:=IssFindModule(hWnd, ModuleName, sCurLanguage, Silent, CanIgnore);       { search for module and display files-in-use window if found  }
+  if (not IsUninstaller) and (nCode=1) then  begin                      { cancel pressed or files-in-use window closed }
+    PostMessage (WizardForm.Handle, $0010, 0, 0);                       { quit setup, $0010=WM_CLOSE }
+  end else if (nCode=0) or (nCode=2) then begin                         { no module found or ignored pressed}
+    Result := true;                                                     { continue setup  }
+  end;
+end;
+
+[/Code]
+
+#endif
+
+

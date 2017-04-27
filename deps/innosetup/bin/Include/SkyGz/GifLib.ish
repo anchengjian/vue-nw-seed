@@ -1,0 +1,39 @@
+
+#ifndef _GIFLIB_ISH_
+  #Define _GIFLIB_ISH_ __PATHFILENAME__
+  #expr Plugin_Init
+
+  #define GifLib_DLL "GifLib.dll"
+
+[Files]
+Source: {#PluginDir}\{#GifLib_DLL}; DestDir: {#Plugin_DestDir}; Flags: {#Plugin_FileFlags}
+
+[Code]
+//初始化创建Gif图像组件于父句柄
+function GifInit(HWD: HWND):Integer;
+external 'GifInit@{#Plugin_CodeDir(GifLib_DLL)} {#Plugin_CodeFlags}';
+
+//设置Gif图像组件大小与位置
+Procedure GifSetBounds(Handle, Left, Top, Width, Height: Integer);
+external 'GifSetBounds@{#Plugin_CodeDir(GifLib_DLL)} {#Plugin_CodeFlags}';
+
+//设置Gif图像组件图片文件
+Procedure GifSetFile(Handle: Integer; FileName: AnsiString);
+external 'GifSetFile@{#Plugin_CodeDir(GifLib_DLL)} {#Plugin_CodeFlags}';
+
+//设置Gif图像组件父句柄
+Procedure GifSetParentWindow(Handle: Integer; HWND: HWND);
+external 'GifSetParentWindow@{#Plugin_CodeDir(GifLib_DLL)} {#Plugin_CodeFlags}';
+
+//释放指定句柄的Gif图像组件
+Procedure GifFree(Handle: Integer);
+external 'GifFree@{#Plugin_CodeDir(GifLib_DLL)} {#Plugin_CodeFlags}';
+
+//释放全部Gif图像组件
+Procedure GifAllFree;
+external 'GifAllFree@{#Plugin_CodeDir(GifLib_DLL)} {#Plugin_CodeFlags}';
+
+[/Code]
+
+#endif
+

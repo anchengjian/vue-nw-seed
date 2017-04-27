@@ -1,0 +1,109 @@
+{
+  "_args": [
+    [
+      {
+        "raw": "innosetup-compiler",
+        "scope": null,
+        "escapedName": "innosetup-compiler",
+        "name": "innosetup-compiler",
+        "rawSpec": "",
+        "spec": "latest",
+        "type": "tag"
+      },
+      "E:\\github\\vue-nw-seed"
+    ]
+  ],
+  "_cnpm_publish_time": 1467103003150,
+  "_from": "innosetup-compiler@latest",
+  "_id": "innosetup-compiler@5.5.9",
+  "_inCache": true,
+  "_location": "/innosetup-compiler",
+  "_nodeVersion": "6.2.2",
+  "_npmOperationalInternal": {
+    "host": "packages-12-west.internal.npmjs.com",
+    "tmp": "tmp/innosetup-compiler-5.5.9.tgz_1467102999582_0.43726728460751474"
+  },
+  "_npmUser": {
+    "name": "felicienfrancois",
+    "email": "felicien@tweakstyle.com"
+  },
+  "_npmVersion": "3.9.5",
+  "_phantomChildren": {},
+  "_requested": {
+    "raw": "innosetup-compiler",
+    "scope": null,
+    "escapedName": "innosetup-compiler",
+    "name": "innosetup-compiler",
+    "rawSpec": "",
+    "spec": "latest",
+    "type": "tag"
+  },
+  "_requiredBy": [
+    "#DEV:/",
+    "#USER"
+  ],
+  "_resolved": "https://registry.npm.taobao.org/innosetup-compiler/download/innosetup-compiler-5.5.9.tgz",
+  "_shasum": "fff561a1bb49ce5d3b133ee8b788b5a868f5ee21",
+  "_shrinkwrap": null,
+  "_spec": "innosetup-compiler",
+  "_where": "E:\\github\\vue-nw-seed",
+  "author": {
+    "name": "Felicien Francois",
+    "email": "felicien@tweakstyle.com",
+    "url": "http://tweakstyle.com"
+  },
+  "bin": {
+    "innosetup-compiler": "./lib/iscc"
+  },
+  "bugs": {
+    "url": "https://github.com/felicienfrancois/node-innosetup-compiler/issues"
+  },
+  "dependencies": {},
+  "description": "Node wrapper to compile inno setup scripts (.iss)",
+  "devDependencies": {},
+  "directories": {},
+  "dist": {
+    "shasum": "fff561a1bb49ce5d3b133ee8b788b5a868f5ee21",
+    "size": 2593292,
+    "noattachment": false,
+    "tarball": "http://registry.npm.taobao.org/innosetup-compiler/download/innosetup-compiler-5.5.9.tgz"
+  },
+  "engines": {
+    "node": ">= 0.8.0"
+  },
+  "gitHead": "b7905f45a904125421447aca714e2d99a7fd9f8d",
+  "homepage": "https://github.com/felicienfrancois/node-innosetup-compiler",
+  "keywords": [
+    "inno",
+    "innosetup",
+    "setup",
+    "windows",
+    "installer",
+    "gruntplugin",
+    "node",
+    "cli"
+  ],
+  "licenses": [
+    {
+      "type": "Open Source",
+      "url": "https://github.com/felicienfrancois/node-innosetup-compiler/blob/master/LICENSE"
+    }
+  ],
+  "main": "lib/iscc.js",
+  "maintainers": [
+    {
+      "name": "felicienfrancois",
+      "email": "felicien@tweakstyle.com"
+    }
+  ],
+  "name": "innosetup-compiler",
+  "optionalDependencies": {},
+  "publish_time": 1467103003150,
+  "readme": "ERROR: No README data found!",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/felicienfrancois/node-innosetup-compiler.git"
+  },
+  "scripts": {},
+  "version": "5.5.9"
+}

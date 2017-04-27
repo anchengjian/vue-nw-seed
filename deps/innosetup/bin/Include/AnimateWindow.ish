@@ -1,0 +1,95 @@
+[code]
+
+Const
+  GWL_EXSTYLE = (-20);
+  WS_EX_LAYERED = $80000;
+  LWA_ALPHA = $2;
+
+  {$EXTERNALSYM AW_HOR_POSITIVE}
+  AW_HOR_POSITIVE = $00000001;
+  {$EXTERNALSYM AW_HOR_NEGATIVE}
+  AW_HOR_NEGATIVE = $00000002;
+  {$EXTERNALSYM AW_VER_POSITIVE}
+  AW_VER_POSITIVE = $00000004;
+  {$EXTERNALSYM AW_VER_NEGATIVE}
+  AW_VER_NEGATIVE = $00000008;
+  {$EXTERNALSYM AW_CENTER}
+  AW_CENTER = $00000010;
+  {$EXTERNALSYM AW_HIDE}
+  AW_HIDE = $00010000;
+  {$EXTERNALSYM AW_ACTIVATE}
+  AW_ACTIVATE = $00020000;
+  {$EXTERNALSYM AW_SLIDE}
+  AW_SLIDE = $00040000;
+  {$EXTERNALSYM AW_BLEND}
+  AW_BLEND = $00080000;
+
+//function SetWindowLong(hWnd: HWND; nIndex: Integer; dwNewLong: Longint): Longint;
+//external 'SetWindowLong{#A}@user32.dll stdcall';
+
+function SetLayeredWindowAttributes(hwnd:HWND; crKey:Longint; bAlpha:byte; dwFlags:longint ):longint;
+external 'SetLayeredWindowAttributes@user32 stdcall'; //函数声明
+
+function AnimateWindow(hWnd: HWND; dwTime: DWORD; dwFlags: DWORD): BOOL;
+external 'AnimateWindow@user32 stdcall';
+
+
+(*
+procedure InitializeWizard();
+begin
+  AnimateWindow(StrToInt(ExpandConstant('{wizardhwnd}')), 500, AW_CENTER or AW_ACTIVATE);
+
+  SetWindowLong(StrToInt(ExpandConstant('{wizardhwnd}')),GWL_EXSTYLE, WS_EX_LAYERED);
+  SetLayeredWindowAttributes(StrToInt(ExpandConstant('{wizardhwnd}')), 0, 240, LWA_ALPHA);
+end;
+
+procedure DeinitializeSetup();
+begin
+   ANimateWindow(StrToInt(ExpandConstant('{wizardhwnd}')),500,AW_CENTER+AW_HOR_POSITIVE+AW_HIDE);
+end;
+
+
+在OnShow加入弹出式窗口事件：
+procedure TForm1.FormShow(Sender: TObject);
+begin
+   ANimateWindow(Handle,200,AW_SLIDE+AW_HOR_NEGATIVE);
+end;
+关掉窗口滑动事件在OnClose加入：
+procedure TForm1.FormClose(Sender: TObject; var Action: TCloseAction);
+begin
+   ANimateWindow(Handle,200,AW_SLIDE+AW_HOR_POSITIVE+AW_HIDE);
+end;
+个人感觉不错，在Left属性和Top属性下调整好位置。
+AnImateWindow是个api 属性用法：
+
+函数功能：该函数能在显示与隐藏窗口时能产生特殊的效果。有两种类型的动画效果：滚动动画和滑动动画。
+函数原型：BOOL   AnimateWindow（HWND   hWnd，DWORD   dwTime，DWORD   dwFlags）；
+参数：
+hWnd：指定产生动画的窗口的句柄。
+dwTime：指明动画持续的时间（以微秒计），完成一个动画的标准时间为200微秒。
+dwFags：指定动画类型。这个参数可以是一个或多个下列标志的组合。标志描述：
+AW_SLIDE：使用滑动类型。缺省则为滚动动画类型。当使用AW_CENTER标志时，这个标志就被忽略。
+AW_ACTIVE：激活窗口。在使用了AW_HIDE标志后不要使用这个标志。
+AW_BLEND：使用淡出效果。只有当hWnd为顶层窗口的时候才可以使用此标志。
+AW_HIDE：隐藏窗口，缺省则显示窗口。
+AW_CENTER：若使用了AW_HIDE标志，则使窗口向内重叠；若未使用AW_HIDE标志，则使窗口向外扩展。
+AW_HOR_POSITIVE：自左向右显示窗口。该标志可以在滚动动画和滑动动画中使用。当使用AW_CENTER标志时，该标志将被忽略。
+AW_HOR_NEGATIVE：自右向左显示窗口。该标志可以在滚动动画和滑动动画中使用。当使用AW_CENTER标志时，该标志将被忽略。
+
+AW_VER_POSITIVE：自顶向下显示窗口。该标志可以在滚动动画和滑动动画中使用。当使用AW_CENTER标志时，该标志将被忽略。
+AW_VER_NEGATIVE：自下向上显示窗口。该标志可以在滚动动画和滑动动画中使用。当使用AW_CENTER标志时，该标志将被忽略。
+返回值：如果函数成功，返回值为非零；如果函数失败，返回值为零。在下列情况下函数将失败：
+窗口使用了窗口边界；窗口已经可见仍要显示窗口；窗口已经隐藏仍要隐藏窗口。若想获得更多错误信息，请调用GetLastError函数。
+备注：可以将AW_HOR_POSITIVE或AW_HOR_NEGTVE与AW_VER_POSITVE或AW_VER_NEGATIVE组合来激活一个窗口。
+          可能需要在该窗口的窗口过程和它的子窗口的窗口过程中处理WM_PRINT或WM_PRINTCLIENT消息。对话框，控制，及共用控制已处理WM_PRINTCLIENT消息，缺省窗口过程也已处理WM_PRINT消息。
+
+
+
+窗体 的OnShow事件处理函数中加入下面的代码:
+AnimateWindow(Self.Handle, 500, AW_BLEND or AW_ACTIVATE);
+
+OnClose事件中加入
+AnimateWindow(Self.Handle, 500,AW_BLEND or AW_HIDE);
+
+*)
+[/Code]

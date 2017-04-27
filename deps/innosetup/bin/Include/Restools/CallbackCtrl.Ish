@@ -1,0 +1,13 @@
+#ifndef _CALLBACKCTRL_ISH_
+  #Define _CALLBACKCTRL_ISH_ __PATHFILENAME__
+  #expr Plugin_Init
+
+  #define CallbackCtrl_DLL "CallbackCtrl.dll"
+  #expr AddAutoPDirs( CallbackCtrl_DLL )
+
+  #define CallbackCtrl_External " external 'wrapcallbackaddr@" + Plugin_CodeDir(CallbackCtrl_Dll) + ' ' + Plugin_CodeFlags + ''' '
+
+[Files]
+Source: {#PluginDir}\{# CallbackCtrl_DLL}; DestDir: {#Plugin_DestDir}; Flags: {#Plugin_FileFlags}
+
+#endif

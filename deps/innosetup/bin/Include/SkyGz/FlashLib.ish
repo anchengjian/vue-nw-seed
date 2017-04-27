@@ -1,0 +1,66 @@
+
+#ifndef _FLASHLIB_ISH_
+  #Define _FLASHLIB_ISH_ __PATHFILENAME__
+  #expr Plugin_Init
+
+  #define FlashLib_DLL "FlashLib.dll"
+
+[Files]
+Source: {#PluginDir}\{#FlashLib_DLL}; DestDir: {#Plugin_DestDir}; Flags: {#Plugin_FileFlags}
+
+[Code]
+//hWndParent　将FLASH创建在那个句柄上
+//BmpTransparenthWnd 当FLASH在一个图像上时，并须要透明看到图像，就要指定该图像的句柄，
+//			并且该FLASH的X, Y, nWidth, nHeight一定要与图像的一致，如不在图像上，可设置为0
+//Transparent　是否透明
+Function FlashLibInit(X, Y, nWidth, nHeight: Integer; hWndParent, BmpTransparenthWnd: HWND; Transparent: BOOL): HWND;
+External 'FlashLibInit@{#Plugin_CodeDir(FlashLib_DLL)} {#Plugin_CodeFlags}';
+
+//退出时一定要执行该API，否则会报错
+Procedure FlashLibFree(H: HWND);
+External 'FlashLibFree@{#Plugin_CodeDir(FlashLib_DLL)} {#Plugin_CodeFlags}';
+
+//支持SWF、FLV
+Function FlashLoadMovie(HWND: HWND; Path: PAnsiChar): Boolean;
+External 'FlashLoadMovie@{#Plugin_CodeDir(FlashLib_DLL)} {#Plugin_CodeFlags}';
+
+Function FlashPlay(HWND: HWND): Boolean;
+External 'FlashPlay@{#Plugin_CodeDir(FlashLib_DLL)} {#Plugin_CodeFlags}';
+
+Function FlashStop(HWND: HWND): Boolean;
+External 'FlashStop@{#Plugin_CodeDir(FlashLib_DLL)} {#Plugin_CodeFlags}';
+
+Function FlashStopPlay(HWND: HWND): Boolean;
+External 'FlashStopPlay@{#Plugin_CodeDir(FlashLib_DLL)} {#Plugin_CodeFlags}';
+
+Function FlashPutLoop(HWND: HWND; Loop: BOOL): Boolean;
+External 'FlashStop@{#Plugin_CodeDir(FlashLib_DLL)} {#Plugin_CodeFlags}';
+
+Function FlashPutMenu(HWND: HWND; Menu: BOOL): Boolean;
+External 'FlashPutMenu@{#Plugin_CodeDir(FlashLib_DLL)} {#Plugin_CodeFlags}';
+
+Function FlashPutStandardMenu(HWND: HWND; bEnable: BOOL): Boolean;
+External 'FlashPutStandardMenu@{#Plugin_CodeDir(FlashLib_DLL)} {#Plugin_CodeFlags}';
+
+Function FlashBack(HWND: HWND): Boolean;
+External 'FlashBack@{#Plugin_CodeDir(FlashLib_DLL)} {#Plugin_CodeFlags}';
+
+Function FlashForward(HWND: HWND): Boolean;
+External 'FlashForward@{#Plugin_CodeDir(FlashLib_DLL)} {#Plugin_CodeFlags}';
+
+Function FlashRewind(HWND: HWND): Boolean;
+External 'FlashRewind@{#Plugin_CodeDir(FlashLib_DLL)} {#Plugin_CodeFlags}';
+
+Function FlashZoom(HWND: HWND; Factor: DWORD): Boolean;
+External 'FlashZoom@{#Plugin_CodeDir(FlashLib_DLL)} {#Plugin_CodeFlags}';
+
+Function FlashGotoFrame(HWND: HWND; FrameNum: DWORD): Boolean;
+External 'FlashGotoFrame@{#Plugin_CodeDir(FlashLib_DLL)} {#Plugin_CodeFlags}';
+
+Function FlashSetVariableA(HWND: HWND; Name, Value: PAnsiChar): Boolean;
+External 'FlashSetVariableA@{#Plugin_CodeDir(FlashLib_DLL)} {#Plugin_CodeFlags}';
+
+[/Code]
+
+#endif
+

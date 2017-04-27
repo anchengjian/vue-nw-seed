@@ -1,0 +1,31 @@
+;Inno Tools InnoCallback
+;Copyright (C) Sherlock Software 2006
+;Version 0.1 Alpha
+;
+;This example shows how you can create a stdcall callback that external DLLs can call.
+;In this example, we will create a timer using the Windows API. Windows will call our
+;callback where we will randomly change the background color of the Welcome page.
+;
+;Contact:
+; The author, Nicholas Sherlock, at nick@sherlocksoftware.org. Comments, questions and suggestions welcome.
+;
+;Website:
+; http://www.sherlocksoftware.org
+
+#ifndef _INNOCALLBACK_ISH_
+  #Define _INNOCALLBACK_ISH_ __PATHFILENAME__
+  #expr Plugin_Init
+
+  #define InnoCallBack_DLL "InnoCallBack.dll"
+  #expr AddAutoPDirs( InnoCallBack_DLL )
+
+  #define InnoCallBack_External " external 'wrapcallback@" + Plugin_CodeDir(InnoCallBack_Dll) + ' ' + Plugin_CodeFlags + ''' '
+
+[Files]
+Source: {#PluginDir}\{# InnoCallBack_DLL}; DestDir: {#Plugin_DestDir}; Flags: {#Plugin_FileFlags}
+
+#endif
+
+
+
+

@@ -1,0 +1,15 @@
+#ifndef _CALLNSIS_ISH_
+  #Define _CALLNSIS_ISH_ __PATHFILENAME__
+  #expr Plugin_Init
+
+  #define CallNsis_DLL "CallNsis.dll"
+
+[Files]
+Source: {#PluginDir}\{# CallNsis_DLL}; DestDir: {#Plugin_DestDir}; Flags: {#Plugin_FileFlags}
+
+[Code]
+function callplug(parentwnd: Integer; pluginname,funcname,param1,param2,param3,param4,param5,param6,param7,param8,param9,param10: PAnsiChar): Integer;
+external 'callplug@{#Plugin_CodeDir(CallNsis_DLL)} {#Plugin_CodeFlags}';
+[/Code]
+
+#endif

@@ -1,0 +1,228 @@
+[Code]
+//http://ns2.ru-board.com/topic.cgi?forum=5&topic=32449&start=1631&limit=1&m=1
+////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////ExecAndWait.iss////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////§°§á§Ú§ã§Ñ§ß§Ú§Ö////////////////////////////////////////////
+// §¥§Ñ§ß§ß§í§Û §ã§Ü§â§Ú§á§ä §á§à§Ù§Ó§à§Ý§ñ§Ö§ä §Ù§Ñ§á§å§ã§Ü§Ñ§ä§î §Õ§â§å§Ô§Ú§Ö §á§â§à§Ô§â§Ñ§Þ§Þ§í, §ã §à§Ø§Ú§Õ§Ñ§ß§Ú§Ö§Þ §Ú§ç §Ù§Ñ§Ó§Ö§â§ê§Ö§ß§Ú§ñ. //
+// §ª§ß§ã§ä§Ñ§Ý§Ý§ñ§ä§à§â §Ó §Þ§à§Þ§Ö§ß§ä §à§Ø§Ú§Õ§Ñ§ß§Ú§ñ §à§ã§ä§Ñ§×§ä§ã§ñ '§Ü§Ý§Ú§Ü§Ñ§Ò§Ö§Ý§î§ß§í§Þ', §ä.§Ö. §à§ä§Ó§Ö§é§Ñ§Ö§ä §ß§Ñ §Ó§ã§Ö    //
+// §Õ§Ö§Û§ã§ä§Ó§Ú§ñ §á§à§Ý§î§Ù§à§Ó§Ñ§ä§Ö§Ý§ñ.                                                         //
+//                                                                                //
+///////////////////////////////§ª§ã§á§à§Ý§î§Ù§à§Ó§Ñ§ß§Ú§Ö////////////////////////////////////////
+// §¥§à§Ò§Ñ§Ó§î§ä§Ö §ï§ä§à§ä §ã§Ü§â§Ú§á§ä §Ó §ã§Ó§à§Û §á§â§à§Ö§Ü§ä, §ã §á§à§Þ§à§ë§î§ð §Õ§Ú§â§Ö§Ü§ä§Ú§Ó§í §á§â§Ö§á§â§à§è§Ö§ã§ã§à§â§Ñ #include.//
+// §±§â§Ú§Þ§Ö§â:                                                                        //
+// #include "ExecAndWait.iss"                                                     //
+//                                                                                //
+// §±§à§ã§Ý§Ö §Õ§à§Ò§Ñ§Ó§Ý§Ö§ß§Ú§ñ §ï§ä§à§Ô§à §ã§Ü§â§Ú§á§ä§Ñ §Ó §ã§Ó§à§Û §á§â§à§Ö§Ü§ä, §Ó§í §Þ§à§Ø§Ö§ä§Ö §Ó§í§Ù§Ó§Ñ§ä§î §æ§å§ß§Ü§è§Ú§ð:       //
+// function ExecAndWait(const Filename, Params, WorkingDir: string;               //
+//                      const ShowCmd: Word; TerminateChild: Boolean): Boolean;   //
+// §Ô§Õ§Ö:                                                                           //
+// Filename - §Ú§Þ§ñ §æ§Ñ§Û§Ý§Ñ;                                                          //
+// Params - §á§Ñ§â§Ñ§Þ§Ö§ä§â §Ü§à§Þ§Ñ§ß§Õ§ß§à§Û §ã§ä§â§à§Ü§Ú, §ã §Ü§à§ä§à§â§í§Þ §ß§å§Ø§ß§à §Ù§Ñ§á§å§ã§ä§Ú§ä§î §á§â§à§Ô§â§Ñ§Þ§Þ§å;       //
+// WorkingDir - §Ü§Ñ§ä§Ñ§Ý§à§Ô, §Ô§Õ§Ö §ß§Ñ§ç§à§Õ§Ú§ä§ã§ñ §á§â§à§Ô§â§Ñ§Þ§Þ§Ñ;                                 //
+// ShowCmd - §á§Ñ§â§Ñ§Þ§Ö§ä§â §Õ§Ý§ñ §Ù§Ñ§á§å§ã§Ü§Ñ §á§â§à§Ô§â§Ñ§Þ§Þ§í (SW_HIDE, SW_SHOWNORMAL §Ú §ä.§Õ.);      //
+// TerminateChild - §å§Ü§Ñ§Ù§í§Ó§Ñ§Ö§ä§ã§ñ, §ß§å§Ø§ß§à §Ý§Ú §Ù§Ñ§Ó§Ö§â§ê§Ú§ä§î §Ù§Ñ§á§å§ë§Ö§ß§ß§å§ð §Ú§ß§ã§ä§Ñ§Ý§Ý§ñ§ä§à§â§à§Þ      //
+//                  §á§â§à§Ô§â§Ñ§Þ§Þ§å, §Ö§ã§Ý§Ú §á§à§Ý§î§Ù§à§Ó§Ñ§ä§Ö§Ý§î §à§ä§Þ§Ö§ß§Ú§Ý §å§ã§ä§Ñ§ß§à§Ó§Ü§å §Ó§à §Ó§â§Ö§Þ§ñ       //
+//                  §Ö§× §â§Ñ§Ò§à§ä§í.                                                    //
+//                  §£§à§Ù§Þ§à§Ø§ß§í§Ö §Ù§ß§Ñ§é§Ö§ß§Ú§ñ: True (§Ù§Ñ§á§å§ë§Ö§ß§ß§Ñ§ñ §á§â§à§Ô§â§Ñ§Þ§Þ§Ñ §Ò§å§Õ§Ö§ä §Ù§Ñ§Ü§â§í§ä§Ñ  //
+//                  §Ó§Þ§Ö§ã§ä§Ö §ã §Ú§ß§ã§ä§Ñ§Ý§Ý§ñ§ä§à§â§à§Þ), False (§á§â§à§Õ§à§Ý§Ø§Ú§ä §ã§Ó§à§ð §â§Ñ§Ò§à§ä§å);       //
+// §±§â§Ú§Þ§Ö§é§Ñ§ß§Ú§Ö:                                                                    //
+// Params §Ú WorkingDir §Þ§à§Ø§ß§à §ß§Ö §å§Ü§Ñ§Ù§í§Ó§Ñ§ä§î.                                        //
+//                                                                                //
+// §±§â§Ú§Þ§Ö§â 1:                                                                      //
+//   ExecAndWait(ExpandConstant('{sys}\notepad.exe'), '', '', SW_SHOW, True);     //
+// §±§â§Ú§Þ§Ö§â 2:                                                                      //
+//   ExecAndWait('notepad.exe', '', ExpandConstant('{sys}'), SW_SHOW, False);     //
+////////////////////////////////////////////////////////////////////////////////////
+//                                                                                //
+////////////////////////////////////////////////////////////////////////////////////
+// §¡§Ó§ä§à§â §ã§Ü§â§Ú§á§ä§Ñ: Serega, http://forum.oszone.net/member.php?userid=88670         //
+// e-mail: serg_0675@mail.ru                                                      //
+////////////////////////////////////////////////////////////////////////////////////
+
+const
+  MAX_PATH              = 260;
+  TH32CS_SNAPPROCESS    = $00000002;
+  INVALID_HANDLE_VALUE  = -1;
+  PROCESS_TERMINATE     = $0001;
+  PM_REMOVE             = 1;
+  STARTF_USESHOWWINDOW  = 1;
+  NORMAL_PRIORITY_CLASS = $00000020;
+
+type
+  TProcessEntry32 = record
+    dwSize: DWORD;
+    cntUsage: DWORD;
+    th32ProcessID: DWORD;
+    th32DefaultHeapID: DWORD;
+    th32ModuleID: DWORD;
+    cntThreads: DWORD;
+    th32ParentProcessID: DWORD;
+    pcPriClassBase: Longint;
+    dwFlags: DWORD;
+    szExeFile: array[0..MAX_PATH] of Char;
+  end;
+
+  _TMsg = record
+    hWnd: HWND;
+    msg: Word;
+    wParam: Word;
+    lParam: LongWord;
+    Time: TFileTime;
+    pt: TPoint;
+  end;
+
+  TProcessInformation = record
+    hProcess: THandle;
+    hThread: THandle;
+    dwProcessId: DWORD;
+    dwThreadId: DWORD;
+  end;
+
+  TStartupInfo = record
+    cb: DWORD;
+    lpReserved: Longint;
+    lpDesktop: Longint;
+    lpTitle: PChar;
+    dwX: DWORD;
+    dwY: DWORD;
+    dwXSize: DWORD;
+    dwYSize: DWORD;
+    dwXCountChars: DWORD;
+    dwYCountChars: DWORD;
+    dwFillAttribute: DWORD;
+    dwFlags: DWORD;
+    wShowWindow: Word;
+    cbReserved2: Word;
+    lpReserved2: Byte;
+    hStdInput: THandle;
+    hStdOutput: THandle;
+    hStdError: THandle;
+  end;
+
+function _CreateToolhelp32Snapshot(dwFlags, th32ProcessID: DWORD): THandle;
+  external 'CreateToolhelp32Snapshot@kernel32.dll stdcall';
+function _Process32First(hSnapshot: THandle; var lppe: TProcessEntry32): BOOL;
+  external 'Process32First@kernel32.dll stdcall';
+function _Process32Next(hSnapshot: THandle; var lppe: TProcessEntry32): BOOL;
+  external 'Process32Next@kernel32.dll stdcall';
+function _OpenProcess(dwDesiredAccess: DWORD; bInheritHandle: BOOL; dwProcessId: DWORD): THandle;
+  external 'OpenProcess@kernel32.dll stdcall';
+function _TerminateProcess(hProcess: THandle; uExitCode: UINT): BOOL;
+  external 'TerminateProcess@kernel32.dll stdcall';
+function _CloseHandle(hObject: THandle): BOOL; external 'CloseHandle@kernel32.dll stdcall';
+function _PeekMessage(var lpMsg: _TMsg; hWnd: HWND; wMsgFilterMin, wMsgFilterMax,
+  wRemoveMsg: UINT): BOOL; external 'PeekMessageA@user32.dll stdcall';
+function _TranslateMessage(const lpMsg: _TMsg): BOOL; external 'TranslateMessage@user32.dll stdcall';
+function _DispatchMessage(const lpMsg: _TMsg): Longint; external 'DispatchMessageA@user32.dll stdcall';
+function _CreateProcess(lpApplicationName: PChar; lpCommandLine: PChar;
+  lpProcessAttributes, lpThreadAttributes: DWORD; bInheritHandles: BOOL; dwCreationFlags: DWORD;
+    lpEnvironment: PChar; lpCurrentDirectory: PChar; const lpStartupInfo: TStartupInfo;
+      var lpProcessInformation: TProcessInformation): BOOL;
+        external 'CreateProcessA@kernel32.dll stdcall';
+
+var
+  _QUIT: Boolean;
+
+procedure _Application_ProcessMessages;
+var
+  Msg: _TMsg;
+begin
+  if not _PeekMessage(Msg, 0, 0, 0, PM_REMOVE) then
+    Exit;
+  _TranslateMessage(Msg);
+  _DispatchMessage(Msg);
+end;
+
+function _KillProcess(ProcessID: DWORD): Boolean;
+var
+  hProcess: THandle;
+begin
+  hProcess:= _OpenProcess(PROCESS_TERMINATE, False, ProcessID);
+  Result:= _TerminateProcess(hProcess, 0);
+  _CloseHandle(hProcess);
+end;
+
+function _ArrayCharToString(ArrayChar: array of Char): string;
+var
+  i: Integer;
+  str: string;
+begin
+  for i:= 0 to MAX_PATH do
+    if (ArrayChar[i]) <> #0 then
+      str:= str + ArrayChar[i]
+    else Break;
+  Result:= str;
+end;
+
+function _ProcIsRunning(Process: string; ProcessID: DWORD): Boolean;
+var
+  Snap: THandle;
+  pe32: TProcessEntry32;
+begin
+  Result:= False;
+  if Pos('\', Process) > 0 then Process:= ExtractFileName(Process);
+  Snap:= _CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+  if Snap = INVALID_HANDLE_VALUE then Exit;
+  pe32.dwSize:= SizeOf(pe32);
+  if _Process32First(Snap, pe32) then
+    while _Process32Next(Snap, pe32) do
+      begin
+        if pe32.th32ProcessID = ProcessID then
+          if (LowerCase(_ArrayCharToString(pe32.szExeFile)) = LowerCase(Process)) then
+            begin
+              Result:= True;
+              Break;
+            end;
+        if _QUIT then Break;
+        _Application_ProcessMessages;
+      end;
+  _CloseHandle(Snap);
+end;
+
+procedure _WizardFormOnCloseQuery(Sender: TObject;  var CanClose: Boolean);
+begin
+  _QUIT:= True;
+end;
+
+function _StartProc(const Filename, Params, WorkingDir: string; const ShowCmd: Word;
+  TerminateChild: Boolean): Boolean;
+var
+  PI: TProcessInformation;
+  SI: TStartupInfo;
+  ProcessId: DWORD;
+  ProcessName: string;
+  CmdLine: string;
+begin
+  _QUIT:= False;
+  CmdLine:= '"' + Filename + '" ' + Params;
+  SI.cb:= SizeOf(SI);
+  SI.dwFlags:= STARTF_USESHOWWINDOW;
+  SI.wShowWindow:= ShowCmd;
+  try
+    Result:= _CreateProcess('', PChar(CmdLine), 0, 0, False, NORMAL_PRIORITY_CLASS,
+                            '', PChar(WorkingDir), SI, PI);
+  except
+    ShowExceptionMessage;
+  end;
+  if Result then
+    begin
+      WizardForm.OnCloseQuery:= @_WizardFormOnCloseQuery;
+      ProcessName:= ExtractFileName(Filename);
+      ProcessId:= PI.dwProcessId;
+      _CloseHandle(PI.hProcess);
+      _CloseHandle(PI.hThread);
+      while _ProcIsRunning(ProcessName, ProcessID) do;
+      if _QUIT and TerminateChild then _KillProcess(ProcessID);
+    end;
+end;
+////////////////////////////////////////////////////////////////////////////////////
+function ExecAndWait(const Filename, Params, WorkingDir: string;
+                     const ShowCmd: Word; TerminateChild: Boolean): Boolean;
+// §æ§å§ß§Ü§è§Ú§ñ §Ù§Ñ§á§å§ã§Ü§Ñ§Ö§ä §å§Ü§Ñ§Ù§Ñ§ß§ß§í§Û §æ§Ñ§Û§Ý §Ú §Ø§Õ§×§ä §Ö§Ô§à §Ù§Ñ§Ó§Ö§â§ê§Ö§ß§Ú§ñ
+begin
+  Result:= _StartProc(Filename, Params, WorkingDir, ShowCmd, TerminateChild);
+end;
+////////////////////////////////////////////////////////////////////////////////////
+
+[/Code]

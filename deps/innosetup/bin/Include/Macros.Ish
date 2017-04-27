@@ -1,0 +1,102 @@
+#ifndef _MACROS_ISH_
+  #Define _MACROS_ISH_ __PATHFILENAME__
+
+//Author      : WLDNA
+//Link        : http://www.wldna.com/
+//Description : .
+//Modified    : 2013-11-05 22:17:39
+//Tested Inno :
+//Usage       :
+
+#define AddQuotes(str S) \
+  Local[0] = S, \
+  Local[0] = Copy(Local[0], 1, 1) == '"' ? Local[0] : ('"' + Local[0]), \
+  Copy(Local[0], Len(Local[0])) == '"' ?  Local[0] : (Local[0] + '"')
+
+#define RemoveQuotes(str S) \
+  Local[0] = S, \
+  Local[0] = Copy(Local[0], 1, 1) == '"' ? Copy(Local[0], 2, Len(Local[0])) : Local[0], \
+  Copy(Local[0], Len(Local[0])) == '"' ?  Copy(Local[0], 1, Len(Local[0]) - 1) : Local[0]
+
+#define FolderExists(str DirName) \
+  Local[0] = FindFirst(RemoveBackslash(DirName), faDirectory | faHidden | faSysFile ), \
+  Local[0] ? (FindClose(Local[0]), Local[0] = 1) : (Local[0] = 0), \
+  Local[0]
+  
+#ifndef DirExists
+  #define DirExists(str DirName) \
+    FolderExists(DirName)
+#endif
+
+#define GetCurDir() \
+  Exec("cmd.exe", '/c echo [Main]>"%Temp%\Defines.ini" & echo SrcPath="%cd%" >>"%Temp%\Defines.ini"', ".\", 1, SW_HIDE), \
+  ReadIni(GetEnv("Temp") + '\Defines.ini', 'Main', 'SrcPath', '')
+
+#define SectionConst(str s) \
+  StringChange(s, "{", "{{")
+
+#define CodeConst(str s) \
+  StringChange(s, "'", "''")
+
+#define PercentConst(str s) \
+  Local[0] = StringChange(s, "{", "{{"), \
+  Local[0] = StringChange(Local[0], "%", "%25"), \
+  Local[0] = StringChange(Local[0], "}", "%7d"), \
+  Local[0] = StringChange(Local[0], "|", "%7c"), \
+  Local[0] = StringChange(Local[0], ",", "%2c"), \
+  Local[0]
+
+//Author: WLDNA
+//Usage:
+//#if InvalidFileName(FileName)
+//  #error "Error! FileName can not inlude£º\/:*?"<>| "
+//#endif
+#define InvalidFileName(str FileName) \
+  Pos("\", FileName) + Pos("/", FileName) + Pos(":", FileName) + Pos("*", FileName) + \
+  Pos("?", FileName) + Pos('"', FileName) + Pos("<", FileName) + Pos(">", FileName) + Pos("|", FileName)
+
+// Inno Setup Preprocessor macro to simplify the version string.
+//	The following situations are covered:
+// http://www.vincenzo.net/isxkb/index.php?title=SimpleVersionMacro
+//	(1)	1.2.4.3	-> 1.2.4
+//	(2)	1.2.4.0	-> 1.2.4
+//	(3)	1.2.0.0	-> 1.2
+//	(4)	1.0.0.0	-> 1.0
+//	(5)	1.0.0.2	-> 1.0
+//	(6)	1.3.0.1	-> 1.3
+#define SimpleVersion(str S) \
+	Local[0] = Pos (".0.0.", S), \
+	/* (4) and (5) */ \
+	(Local[0] > 0) ? Copy (S, 1, 3) : \
+	( \
+		Local[0] = Pos (".0.0", S), \
+		/* (3) */ \
+		(Local[0] > 0) ? Copy (S, 1, 3) : \
+		( \
+			Local[0] = Pos (".0", S), \
+			/* (2) */ \
+			(Local[0] > 5) ? Copy (S, 1, Local[0] - 1) : \
+			( \
+				Local[0] = Pos (".0.", S), \
+				/* (6) */ \
+				(Local[0] > 0) ? Copy (S, 1, 3) : \
+				( \
+					Copy (S, 1, 5) \
+				) \
+			) \
+		) \
+	);
+
+// Read the previuos build number. If there is none take 0 instead.
+// Increment the build number by one.
+// Store the number in the ini file for the next build.
+// http://www.vincenzo.net/isxkb/index.php?title=Incrementing_build_number_every_time_the_script_is_compiled
+#define BuildNum(str SetFile = AddBackslash(SourcePath)	+ "BuildInfo.ini") \
+  Local[0] = Int(ReadIni(SetFile,"BuildInfo","Times","0")), \
+  Local[0] = Local[0] + 1, \
+  WriteIni(SetFile,"BuildInfo","Times", Local[0]), \
+  Local[0]
+
+#endif
+
+

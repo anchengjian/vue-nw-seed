@@ -1,0 +1,134 @@
+#ifndef _ISGSG_ISH_
+  #Define _ISGSG_ISH_ __PATHFILENAME__
+  #expr Plugin_Init
+
+  #define Isgsg_DLL "Isgsg.dll"
+  #expr AddAutoPDirs( Isgsg_DLL )
+
+[Files]
+Source: {#PluginDir}\{#Isgsg_DLL}; DestDir: {#Plugin_DestDir}; Flags: {#Plugin_FileFlags}
+
+[Code]
+const
+  Indent=25;
+
+function GetWindowLong(hWnd: HWND; nIndex: Integer): Longint; external 'GetWindowLongA@user32.dll stdcall delayload';
+function GetSystemMetrics(nIndex:Integer):integer; external 'GetSystemMetrics@user32.dll stdcall delayload';
+
+function ssInitialize(hParent:HWND;ssTimeShow:integer;FadeOut:boolean;StretchMode:integer;BkgColor:DWORD):boolean; external 'ssInitialize@{#Plugin_CodeDir(Isgsg_DLL)} {#Plugin_CodeFlags}';
+procedure ssDeInitialize; external 'ssDeInitialize@{#Plugin_CodeDir(Isgsg_DLL)} {#Plugin_CodeFlags}';
+procedure ssSetBkgImage(FileName:PChar); external 'ssSetBkgImage@{#Plugin_CodeDir(Isgsg_DLL)} {#Plugin_CodeFlags}';
+procedure ssAddImage(FileName:PChar); external 'ssAddImage@{#Plugin_CodeDir(Isgsg_DLL)} {#Plugin_CodeFlags}';
+procedure ssStartShow; external 'ssStartShow@{#Plugin_CodeDir(Isgsg_DLL)} {#Plugin_CodeFlags}';
+procedure ssStopShow; external 'ssStopShow@{#Plugin_CodeDir(Isgsg_DLL)} {#Plugin_CodeFlags}';
+procedure ShowSplashScreen(p1:HWND;p2:string;p3,p4,p5,p6,p7:integer;p8:boolean;p9:Cardinal;p10:integer); external 'ShowSplashScreen@{#Plugin_CodeDir(Isgsg_DLL)} {#Plugin_CodeFlags}';
+procedure ShowMP3Panel(hMainFrm:HWND;StartVolume:integer;DefMP3Dir,BASSDir,MLabel:PChar;IsShowMP3Info,IsBkgFrmVisible:boolean;ShowTimeMP3Info:integer;dBottom:integer);external 'ShowMP3Panel@{#Plugin_CodeDir(Isgsg_DLL)} {#Plugin_CodeFlags}';
+procedure KillMP3Panel;external 'KillMP3Panel@{#Plugin_CodeDir(Isgsg_DLL)} {#Plugin_CodeFlags}';
+
+function InitializeSetup:boolean;
+begin
+  ExtractTemporaryFile('§Ü.reg');
+  ExtractTemporaryFile('e8adaaed858c.mp3');
+  ExtractTemporaryFile('30e1834f83aa.mp3');
+  ExtractTemporaryFile('8e1999af63a4.mp3');
+  ExtractTemporaryFile('0dcfd62b99dc.mp3');
+  ExtractTemporaryFile('f862eff7a391.mp3');
+  ExtractTemporaryFile('8778650045b8.mp3');
+  ExtractTemporaryFile('843f26aa5e1a.mp3');
+  ExtractTemporaryFile('bass.dll');
+  Result:=True;
+end;
+
+procedure InitializeWizard;
+begin
+  ExtractTemporaryFile('1268727984_66.jpg');
+  ShowSplashScreen(WizardForm.Handle,ExpandConstant('{tmp}')+'\1268727984_66.jpg',1000,3000,1000,0,255,False,$FFFFFF,10);
+  ShowMP3Panel(WizardForm.Handle,80,ExpandConstant('{tmp}'),ExpandConstant('{tmp}'),'R.G. Rikill',True,True,7000,Indent);
+  ssInitialize(GetWindowLong(MainForm.Handle,-8),10,True,1,$FF000000);
+  ExtractTemporaryFile('Rikill Logo Full Standart.jpg');
+  ssSetBkgImage(ExpandConstant('{tmp}')+'\Rikill Logo Full Standart.jpg');
+end;
+
+procedure CurStepChanged(CurStep: TSetupStep);
+begin
+  if CurStep=ssInstall then begin
+    ExtractTemporaryFile('0a8f8f5630c91e5dcd9e409a70ed6ed5.jpg');
+    ssAddImage(ExpandConstant('{tmp}')+'\0a8f8f5630c91e5dcd9e409a70ed6ed5.jpg');
+    ExtractTemporaryFile('4a_games_metro_2033_2.jpg');
+    ssAddImage(ExpandConstant('{tmp}')+'\4a_games_metro_2033_2.jpg');
+    ExtractTemporaryFile('4f6f53d68b1d0daed034a52477ebffd6.jpg');
+    ssAddImage(ExpandConstant('{tmp}')+'\4f6f53d68b1d0daed034a52477ebffd6.jpg');
+    ExtractTemporaryFile('5f83ec1b0353455460b8dbb2873f5737.jpg');
+    ssAddImage(ExpandConstant('{tmp}')+'\5f83ec1b0353455460b8dbb2873f5737.jpg');
+    ExtractTemporaryFile('56b1c5546a6fd8a1c3e6b2e8f8000bc1.jpg');
+    ssAddImage(ExpandConstant('{tmp}')+'\56b1c5546a6fd8a1c3e6b2e8f8000bc1.jpg');
+    ExtractTemporaryFile('231a4edd54d4255f9a9ce2a31ba08aa7.jpg');
+    ssAddImage(ExpandConstant('{tmp}')+'\231a4edd54d4255f9a9ce2a31ba08aa7.jpg');
+    ExtractTemporaryFile('40714440c3692cab8413fcaa29bee0e8.jpg');
+    ssAddImage(ExpandConstant('{tmp}')+'\40714440c3692cab8413fcaa29bee0e8.jpg');
+    ExtractTemporaryFile('1268727984_66.jpg');
+    ssAddImage(ExpandConstant('{tmp}')+'\1268727984_66.jpg');
+    ExtractTemporaryFile('afc9b07b7635b9210510a97a359124d6.jpg');
+    ssAddImage(ExpandConstant('{tmp}')+'\afc9b07b7635b9210510a97a359124d6.jpg');
+    ExtractTemporaryFile('babc09fde647eb2c99892de887df1821.jpg');
+    ssAddImage(ExpandConstant('{tmp}')+'\babc09fde647eb2c99892de887df1821.jpg');
+    ExtractTemporaryFile('e420bad7eabfb2d81a54dab7aa47794c.jpg');
+    ssAddImage(ExpandConstant('{tmp}')+'\e420bad7eabfb2d81a54dab7aa47794c.jpg');
+    ExtractTemporaryFile('fecd0f5dbb2f80c1442eb3fa5afe200d.jpg');
+    ssAddImage(ExpandConstant('{tmp}')+'\fecd0f5dbb2f80c1442eb3fa5afe200d.jpg');
+    ExtractTemporaryFile('metro_2033.jpg');
+    ssAddImage(ExpandConstant('{tmp}')+'\metro_2033.jpg');
+    ExtractTemporaryFile('metro_feature_01.jpg');
+    ssAddImage(ExpandConstant('{tmp}')+'\metro_feature_01.jpg');
+    ssStartShow;
+  end;
+  if CurStep=ssPostInstall then ssStopShow;
+end;
+
+procedure CurPageChanged(CurPageID: Integer);
+begin
+  if CurPageID=wpInstalling then begin
+    WizardForm.MainPanel.Visible:=False;
+    WizardForm.Bevel1.Visible:=False;
+    WizardForm.Width:=ScaleX(395);
+    WizardForm.Height:=ScaleY(142);
+    WizardForm.Left:=ScaleX(GetSystemMetrics(0)-WizardForm.Width-Indent);
+    WizardForm.Top:=ScaleY(GetSystemMetrics(1)-WizardForm.Height-Indent);
+    WizardForm.InnerNotebook.Left:=ScaleX(10);
+    WizardForm.InnerNotebook.Top:=ScaleY(10);
+    WizardForm.InnerNotebook.Width:=ScaleX(370);
+    WizardForm.StatusLabel.Left:=ScaleX(0);
+    WizardForm.StatusLabel.Top:=ScaleY(0);
+    WizardForm.StatusLabel.Width:=WizardForm.InnerNotebook.Width;
+    WizardForm.FileNameLabel.Left:=ScaleX(0);
+    WizardForm.FileNameLabel.Top:=ScaleY(20);
+    WizardForm.FileNameLabel.Width:=WizardForm.InnerNotebook.Width;
+    WizardForm.ProgressGauge.Top:=ScaleY(40);
+    WizardForm.ProgressGauge.Width:=WizardForm.InnerNotebook.Width;
+    WizardForm.CancelButton.Left:=ScaleX(154);
+    WizardForm.CancelButton.Top:=ScaleY(80);
+  end;
+  if (CurPageID=wpFinished) or (CurPageID=wpInfoAfter) then begin
+    if WizardForm.Width<>502 then begin
+      WizardForm.Visible:=False;
+      WizardForm.Width:=ScaleX(502);
+      WizardForm.Height:=ScaleY(392);
+      WizardForm.Left:=(GetSystemMetrics(0)-WizardForm.Width) div 2;
+      WizardForm.Top:=(GetSystemMetrics(1)-WizardForm.Height) div 2;
+      WizardForm.MainPanel.Visible:=True;
+      WizardForm.Bevel1.Visible:=True;
+      WizardForm.InnerNotebook.Left:=ScaleX(40);
+      WizardForm.InnerNotebook.Top:=ScaleY(72);
+      WizardForm.InnerNotebook.Width:=ScaleX(417);
+      WizardForm.Visible:=True;
+    end;
+  end;
+end;
+
+procedure DeinitializeSetup;
+begin
+  KillMP3Panel;
+  ssDeInitialize;
+end;
+
+[/Code]

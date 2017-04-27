@@ -1,0 +1,189 @@
+#ifndef _INSTFILES_ISH_
+  #define _INSTFILES_ISH_ __PATHFILENAME__
+
+//Author      : WLDNA
+//Link        : http://www.wldna.com/archive/inno/ish/instfiles/
+//Description : This ish file provide the ability to add files and dirs which has the attribute of faSysFile or faHidden
+//Modified    : 2012-11-13 14:31:48
+//Tested Inno : 5.5.1(a) 5.5.1(u) 5.3.11(a)
+//Usage       : #expr InstFiles("D:\Programs")  or {# InstFiles("D:\Programs") }
+
+//Description : For sections use, avoid { error.
+#define SectionConst(str s) \
+  StringChange(s, "{", "{{")
+
+//Description : Get the arrib of attribute or file
+//Limited     : We can't get file's and dir's readonly attribute
+//Usage:
+//  For Files
+//      Only faHidden
+//        #if HasAttr(Dir, faHidden) && !HasAttr(Dir, faArchive)
+//      Only faSysFile
+//        #if HasAttr(Dir, faSysFile) && !HasAttr(Dir, faArchive)
+//      Both faSysFile and faHidden
+//        #if HasAttr(fPath, faSysFile | faHidden) && !HasAttr(fPath, faSysFile) && !HasAttr(fPath, faHidden) && !HasAttr(fPath, faArchive)
+//
+//  For Dirs
+//      Only faHidden
+//        #if HasAttr(Dir, faDirectory | faHidden) && !HasAttr(Dir, faDirectory)
+//      Only faSysFile
+//        #if HasAttr(Dir, faDirectory | faSysFile) && !HasAttr(Dir, faDirectory)
+//      Both faSysFile and faHidden
+//        #if !HasAttr(Dir, faDirectory | faSysFile) && !HasAttr(Dir, faDirectory | faHidden)
+//
+#define HasAttr(str fPath, int fAttr) \
+  Local[0] = FindFirst(fPath, fAttr), \
+  Local[0] ? FindClose(Local[0]) : 0, \
+  Local[0]
+
+//Description : Get the arrib flag of file
+#define Files_Attr(str fPath) \
+  Local[0] = HasAttr(fPath, faHidden) && !HasAttr(fPath, faArchive), \
+  Local[0] ? (Local[1] = " hidden") : 0, \
+  Local[0] = HasAttr(fPath, faSysFile) && !HasAttr(fPath, faArchive), \
+  Local[0] ? (Local[1] = Local[1] + " system") : 0, \
+  Local[0] = HasAttr(fPath, faSysFile | faHidden) && !HasAttr(fPath, faSysFile) && !HasAttr(fPath, faHidden) && !HasAttr(fPath, faArchive), \
+  Local[0] ? (Local[1] = Local[1] + " system hidden") : 0, \
+  (Local[1] != "") ? (Local[0] = "Attribs:" + Local[1] + ";") : (Local[0] = ""), \
+  Local[0]
+
+//Description : Get the arrib flag of dir
+#define Dirs_Attr(str fPath) \
+  Local[0] = HasAttr(RemoveBackslash(fPath), faDirectory | faHidden) && !HasAttr(RemoveBackslash(fPath), faDirectory), \
+  Local[0] ? (Local[1] = " hidden") : 0, \
+  Local[0] = HasAttr(RemoveBackslash(fPath), faDirectory | faSysFile) && !HasAttr(RemoveBackslash(fPath), faDirectory), \
+  Local[0] ? (Local[1] = Local[1] + " system") : 0, \
+  Local[0] = !HasAttr(RemoveBackslash(fPath), faDirectory | faSysFile) && !HasAttr(RemoveBackslash(fPath), faDirectory | faHidden), \
+  Local[0] ? (Local[1] = Local[1] + " system hidden") : 0, \
+  (Local[1] != "") ? (Local[0] = "Attribs:" + Local[1] + ";") : (Local[0] = ""), \
+  Local[0]
+
+#sub InstFiles_List_Add
+  #define public  ;Fix visibility
+  #define InstFiles_List_Index InstFiles_List_Index + 1
+  #if InstFiles_List_Index > 1
+    #if InstFiles_List_Index > InstFiles_Tmp_Index
+      #define InstFiles_Tmp_Index InstFiles_List_Index + InstFiles_Tmp_Inc
+      #dim  InstFiles_List_Tmp[InstFiles_Tmp_Index]
+      #for {InstFiles_Arr_Index = 0; InstFiles_Arr_Index < InstFiles_List_Index - 1; InstFiles_Arr_Index++} InstFiles_Arr_Resize
+      #dim  InstFiles_List[InstFiles_Tmp_Index]
+      #for {InstFiles_Arr_Index = 0; InstFiles_Arr_Index < InstFiles_List_Index - 1; InstFiles_Arr_Index++} InstFiles_Arr_Resize2
+    #else
+      #define InstFiles_List_Tmp[InstFiles_List_Index - 2] InstFiles_List[InstFiles_List_Index - 2]
+    #endif
+  #else
+    #define InstFiles_Tmp_Index InstFiles_List_Index + InstFiles_Tmp_Inc
+    #dim  InstFiles_List[InstFiles_Tmp_Index]
+    #dim  InstFiles_List_Tmp[InstFiles_Tmp_Index]
+  #endif
+  #define InstFiles_List[InstFiles_List_Index - 1] InstFiles_New
+#endsub
+
+#sub InstFiles_Arr_Resize
+  #define public  ;Fix visibility
+  #define InstFiles_List_Tmp[InstFiles_Arr_Index] InstFiles_List[InstFiles_Arr_Index]
+#endsub
+
+#sub InstFiles_Arr_Resize2
+  #define public  ;Fix visibility
+  #define InstFiles_List[InstFiles_Arr_Index] InstFiles_List_Tmp[InstFiles_Arr_Index]
+#endsub
+
+#sub InstFiles_ProcessFoundFile
+  #define public  ;Fix visibility
+  #define InstFiles_FileName FindGetFileName(InstFiles_FindHandle)
+  #if (LowerCase(InstFiles_FileName) != ".") && (LowerCase(InstFiles_FileName) != "..")
+    #if FileExists(AddBackslash(InstFiles_Dir) + InstFiles_FileName)  ; Find File
+      #define scount scount + 1
+      #pragma message "Adding file: [" + str(scount) + "]" + AddBackslash(InstFiles_Dir) + InstFiles_FileName ;print message
+Source: "{# AddBackslash(InstFiles_Dir) + InstFiles_FileName }"; DestDir: "{app}\{# SectionConst(StringChange(AddBackslash(InstFiles_Dir), InstFiles_App, "")) }"; {# Files_Attr(AddBackslash(InstFiles_Dir) + InstFiles_FileName)} Flags: ignoreversion; {# InstFiles_Flags }
+    #else ; Find Dir
+      #define InstFiles_New AddBackslash(InstFiles_Dir) + InstFiles_FileName + "\" + InstFiles_Mask
+      #expr InstFiles_List_Add
+    #endif
+  #endif
+#endsub
+
+#sub InstFiles_Search
+  #define public  ;Fix visibility
+  #define InstFiles_Dir ExtractFileDir(InstFiles_List[InstFiles_Index])
+  #for {InstFiles_FindHandle = InstFiles_FindResult = FindFirst(InstFiles_List[InstFiles_Index], faAnyFile); \
+    InstFiles_FindResult; \
+    InstFiles_FindResult = FindNext(InstFiles_FindHandle)} \
+    InstFiles_ProcessFoundFile
+  #define InstFiles_List[InstFiles_Index]  "" ;Clear text
+  #if InstFiles_FindHandle
+    #if (InstFiles_FileName == "..") || (Dirs_Attr(InstFiles_Dir) != "")  ;When search done, if found "..", it's an empty folder.
+      #pragma message "Adding dir: " + AddBackslash(InstFiles_Dir) ;print message
+      #insert Find(0, ";[Dirs] Added by InstFiles end", FIND_MATCH | FIND_TRIM)
+Name: "{app}\{# SectionConst(StringChange(AddBackslash(InstFiles_Dir), InstFiles_App, "")) }"; {# Dirs_Attr(InstFiles_Dir) } Flags: uninsalwaysuninstall; {# InstFiles_Flags }
+      #insert Find(0, ";[Files] Added by InstFiles end", FIND_MATCH | FIND_TRIM)
+    #endif
+    #expr FindClose(InstFiles_FindHandle)
+  #endif
+#endsub
+
+#define InstFiles_Dir
+#define InstFiles_Mask
+#define InstFiles_Flags
+
+#sub _InstFiles_
+  #define public  ;Fix visibility
+  #if Find(0, ";[Dirs] Added by InstFiles end", FIND_MATCH | FIND_TRIM) < 0
+[Dirs]
+;[Dirs] Added by InstFiles start
+;[Dirs] Added by InstFiles end
+  #endif
+
+  #if Find(0, ";[Files] Added by InstFiles end", FIND_MATCH | FIND_TRIM) < 0
+[Files]
+;[Files] Added by InstFiles start
+;[Files] Added by InstFiles end
+  #endif
+
+  //Initial
+  #define InstFiles_FindHandle
+  #define InstFiles_FindResult
+  #define InstFiles_App
+  #define InstFiles_New
+  #define InstFiles_List_Index 0
+  #define InstFiles_Arr_Index
+  #define InstFiles_Index
+  #ifndef InstFiles_Tmp_Inc
+    #define InstFiles_Tmp_Inc 100
+  #endif
+  #define InstFiles_Tmp_Index 0
+  #define scount 0
+  //do
+  #define InstFiles_New AddBackslash(InstFiles_Dir) + InstFiles_Mask
+  #expr InstFiles_List_Add
+  #define InstFiles_App AddBackslash(ExtractFilePath(InstFiles_List[InstFiles_List_Index - 1]))
+  #insert Find(0, ";[Files] Added by InstFiles end", FIND_MATCH | FIND_TRIM)
+  #for {InstFiles_Index = 0; InstFiles_Index < InstFiles_List_Index; InstFiles_Index++} InstFiles_Search
+  #append ;Reset insert line
+  //Free
+  #undef  InstFiles_FileName
+  #undef  InstFiles_FindHandle
+  #undef  InstFiles_FindResult
+  #undef  InstFiles_App
+  #undef  InstFiles_New
+  #undef  InstFiles_List_Index
+  #undef  InstFiles_List
+  #undef  InstFiles_Index
+  #undef scount
+  #undef InstFiles_Tmp_Inc
+  #undef InstFiles_Tmp_Index
+
+  #define  InstFiles_Dir
+  #define  InstFiles_Mask
+  #define  InstFiles_Flags
+#endsub
+
+//Main Function
+#define public InstFiles(str Dir, Mask, Flags) \
+  InstFiles_Dir = Dir, \
+  InstFiles_Mask = Mask, \
+  InstFiles_Flags = Flags, \
+  _InstFiles_
+
+#endif

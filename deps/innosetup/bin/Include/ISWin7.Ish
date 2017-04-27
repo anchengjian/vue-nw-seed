@@ -1,0 +1,42 @@
+#ifndef _ISWIN7_ISH_
+; Демонстрационный скрипт ISWin7 v0.5
+;
+; [+] Значительн?переделана отрисовк?прозрачных областей
+;
+; Поддержк?Windows Vista была некорретна вследствии чего была удален?
+;
+; Эт?тестовый скрипт позволяет сделат?прозрачным?кр? ил?вс?окно целико?
+; Работает ?Windows 7, Windows 8
+;
+; ?Windows XP ?Windows Vista он пропускает инициализаци?
+; чт?не мешает работоспособност?сетапник??этих операционных системах
+;
+; Создател? VoLT ( Vo1T на Ru-Board )
+
+  #Define _ISWIN7_ISH_ __PATHFILENAME__
+  #expr Plugin_Init
+
+  #define ISWin7_DLL "ISWin7.dll"
+  #expr AddAutoPDirs( ISWin7_DLL )
+
+[Files]
+Source: {#PluginDir}\{#ISWin7_DLL}; DestDir: {#Plugin_DestDir}; Flags: {#Plugin_FileFlags}
+
+[Code]
+  // Параметр True не трогат?он для htuos ))
+procedure iswin7_add_glass(Handle:HWND; Left, Top, Right, Bottom : Integer; GDIPLoadMode: boolean);
+external 'iswin7_add_glass@{#Plugin_CodeDir(ISWin7_DLL)} {#Plugin_CodeFlags}';
+
+  // Необходимо добавлять каждую кнопку расположенну?на стекле
+  // до инициализаци?стекла для того чт?бы не было ды?))
+procedure iswin7_add_button(Handle:HWND);
+external 'iswin7_add_button@{#Plugin_CodeDir(ISWin7_DLL)} {#Plugin_CodeFlags}';
+
+procedure iswin7_free;
+external 'iswin7_free@{#Plugin_CodeDir(ISWin7_DLL)} {#Plugin_CodeFlags}';
+
+[/Code]
+#endif
+
+
+
