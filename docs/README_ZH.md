@@ -36,7 +36,11 @@ For detailed explanation on how things work, checkout the [guide](http://vuejs-t
 ![build](/docs/assets/build.gif)
 
 ### 升级更新
-![update](/docs/assets/update.gif)
+![update](/docs/assets/upgrade.gif)
+
+### 制作一个更漂亮的 windows 安装程序
+这个功能目前在 [vue-nw-seed/origin/win-beautiful-setup](https://github.com/anchengjian/vue-nw-seed/tree/win-beautiful-setup) 分支上。
+![win-setup](/docs/assets/win-setup.gif)
  
 ## 常见问答
 ### 为啥要固定 nw 版本为 0.14.7 ？
