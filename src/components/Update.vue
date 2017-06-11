@@ -6,7 +6,7 @@
     </section>
     <section class="update-container" v-if="info">
       <h2>New update <small>version: {{info.version}}</small></h2>
-      <button type="button" class="update-btn" v-if="progress < 100" :disabled="progress >= 0" @click="showFileDialog">update</button>
+      <button type="button" class="update-btn" v-if="progress < 100" :disabled="progress >= 0 || !saveAsName" @click="showFileDialog">update</button>
       <input type="file" class="hidden" ref="fileInput" :nwsaveas="saveAsName" @change="startDownload">
     </section>
     <p v-if="progress === -2">download error</p>

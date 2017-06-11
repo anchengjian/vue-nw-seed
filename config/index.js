@@ -42,8 +42,8 @@ module.exports = {
       // see document: https://github.com/nwjs/nw-builder
       builder: {
         files: [resolve('./dist/**')],
-        // platforms: ['win32', 'osx64'],
-        platforms: ['win32'],
+        // platforms: ['win32', 'win64', 'osx64'],
+        platforms: ['win32', 'win64'],
         version: '0.14.7',
         flavor: 'normal',
         cacheDir: resolve('./node_modules/_nw-builder-cache/'),
@@ -65,7 +65,7 @@ module.exports = {
       },
       upgrade: {
         outputFile: resolve('./releases/upgrade.json'),
-        publicPath: 'http://localhost:8080/upgrade/',
+        publicPath: 'http://localhost:8080/releases/',
         files: [curReleasesPath]
       }
     }
@@ -84,7 +84,7 @@ module.exports = {
     // just be aware of this issue when enabling this option.
     cssSourceMap: false,
     upgrade: {
-      publicPath: '/upgrade',
+      publicPath: '/releases',
       directory: 'releases'
     }
   }

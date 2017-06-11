@@ -35,6 +35,9 @@ For detailed explanation on how things work, checkout the [guide](http://vuejs-t
 ### `npm run build`
 ![build](/docs/assets/build.gif)
 
+### 升级更新
+![update](/docs/assets/update.gif)
+ 
 ## 常见问答
 ### 为啥要固定 nw 版本为 0.14.7 ？
 NW.js 不是全版本都支持 XP，由于 Chromium50 开始就不支持XP了，所以如果你的客户端要支持 XP，目前最佳的版本选择是 `0.14.7` 。参见 NW.js 的博客 [NW.js v0.14.7 (LTS) Released](https://nwjs.io/blog/v0.14.7/)
