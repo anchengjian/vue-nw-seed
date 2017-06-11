@@ -1,7 +1,7 @@
 {
   "name": "vue-nw-seed",
   "appName": "应用的中文别名",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "A seed project with Vue.js and Nw.js",
   "author": "anchengjian <anchengjian@gmail.com>",
   "private": true,
