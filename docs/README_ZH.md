@@ -39,7 +39,7 @@ For detailed explanation on how things work, checkout the [guide](http://vuejs-t
 ![win-setup](/docs/assets/win-setup.gif)
 
 ### 升级更新
-![update](/docs/assets/update.gif)
+![update](/docs/assets/upgrade.gif)
 
 ## 常见问答
 ### 为啥要固定 nw 版本为 0.14.7 ？
