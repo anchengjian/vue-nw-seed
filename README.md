@@ -38,6 +38,9 @@ For detailed explanation on how things work, checkout the [guide](http://vuejs-t
 ### setup
 ![win-setup](/docs/assets/win-setup.gif)
 
+### `for upgrade`
+![upgrade](/docs/assets/upgrade.gif)
+
 ## FAQ
 ### Why nw@0.14.7 ？
 Not all of NW.js support `XP`, because from the beginning of `Chromium50` does not support the XP, so if your client want to support XP, the best of version is `0.14.7`. See NW.js's blog: [NW.js v0.14.7 (LTS) Released](https://nwjs.io/blog/v0.14.7/)

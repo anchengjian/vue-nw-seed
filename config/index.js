@@ -50,7 +50,7 @@ module.exports = {
         buildDir: resolve('./releases'),
         winIco: resolve('./build/setup_resources/logo.ico'),
         macIcns: resolve('./build/setup_resources/logo.icns'),
-        buildType: function() {
+        buildType: function () {
           return this.appVersion
         }
       },
@@ -61,7 +61,11 @@ module.exports = {
         resourcesPath: resolve('./build/setup_resources'),
         appPublisher: 'vue-nw-seed, Inc.',
         appURL: 'https://github.com/anchengjian/vue-nw-seed',
-        appId: '{{A448363D-3A2F-4800-B62D-8A1C4D8F1115}}'
+        appId: '{{A448363D-3A2F-4800-B62D-8A1C4D8F1115}}',
+        // data: { name, version, platform }
+        outputFileName: function (data) {
+          return data.name + '-' + data.version
+        }
       },
       upgrade: {
         outputFile: resolve('./releases/upgrade.json'),

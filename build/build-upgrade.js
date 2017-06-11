@@ -5,6 +5,7 @@ var rootPath = path.resolve(__dirname, '../')
 
 // get config
 var config = require(path.resolve(rootPath, 'config'))
+var setupCnf = config.build.nw.setup
 var updCnf = config.build.nw.upgrade
 
 // var platforms = ['win32', 'win64', 'osx32', 'osx64', 'linux32', 'linux64']
@@ -43,10 +44,10 @@ function makeUpgrade(manifest) {
   var upgradeJson = Object.assign({}, manifest, { packages: {} })
 
   // due to files
-  updCnf.files.forEach(function(curPath) {
+  updCnf.files.forEach(function (curPath) {
     var files = fs.readdirSync(curPath)
 
-    files.forEach(function(fileName) {
+    files.forEach(function (fileName) {
       var platform = platforms[fileName]
       if (!platform) return
 
@@ -59,18 +60,28 @@ function makeUpgrade(manifest) {
 }
 
 function getFilePath(manifest, platform, fileName) {
-  return manifest.version + '/' + fileName + '/' + manifest.name + platform.ext
+  var file = getFile(manifest, platform, fileName)
+  return manifest.version + '/' + file
 }
 
 function getFileSize(curPath, manifest, platform, fileName) {
-  return fs.statSync(path.resolve(curPath, fileName + '/' + manifest.name + platform.ext)).size
+  var file = getFile(manifest, platform, fileName)
+  return fs.statSync(path.resolve(curPath, file)).size
+}
+
+function getFile(manifest, platform, fileName) {
+  var name = manifest.name
+  if (typeof setupCnf.outputFileName === 'function') {
+    name = setupCnf.outputFileName({ name: manifest.name, version: manifest.version, platform })
+  }
+  return fileName + '/' + name + platform.ext
 }
 
 function makeJson(json) {
   var upgradeAssetsRoot = path.parse(updCnf.outputFile).dir
   if (!fs.existsSync(upgradeAssetsRoot)) fs.mkdirSync(upgradeAssetsRoot)
 
-  fs.writeFile(updCnf.outputFile, JSON.stringify(json, null, '  '), 'utf-8', function(err) {
+  fs.writeFile(updCnf.outputFile, JSON.stringify(json, null, '  '), 'utf-8', function (err) {
     if (err) console.log(err)
     console.log('\n', 'build upgrade.json in:\n', updCnf.outputFile, '\n')
   })
