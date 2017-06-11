@@ -36,7 +36,7 @@ module.exports = function() {
 function makeExeSetup(opt) {
   const { issPath, files, outputPath, outputFileName, resourcesPath, appPublisher, appURL, appId, platform } = opt
   const { name, appName, version } = tmpJson
-  const tmpIssPath = path.resolve(path.parse(issPath).dir, '_tmp.iss')
+  const tmpIssPath = path.resolve(path.parse(issPath).dir, '_tmp_' + platform +'.iss')
 
   return new Promise(function(resolve, reject) {
     // rewrite name, version to iss
