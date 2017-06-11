@@ -35,6 +35,13 @@ For detailed explanation on how things work, checkout the [guide](http://vuejs-t
 ### `npm run build`
 ![build](/docs/assets/build.gif)
 
+### `for upgrade`
+![upgrade](/docs/assets/upgrade.gif)
+
+### Build a beautiful setup for windows
+This feature in [vue-nw-seed/origin/win-beautiful-setup](https://github.com/anchengjian/vue-nw-seed/tree/win-beautiful-setup) branch.
+![win-setup](/docs/assets/win-setup.gif)
+
 ## FAQ
 ### Why nw@0.14.7 ？
 Not all of NW.js support `XP`, because from the beginning of `Chromium50` does not support the XP, so if your client want to support XP, the best of version is `0.14.7`. See NW.js's blog: [NW.js v0.14.7 (LTS) Released](https://nwjs.io/blog/v0.14.7/)
