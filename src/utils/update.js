@@ -25,8 +25,10 @@ export function getUpdateJson (noCache) {
 }
 
 export function parseName (json) {
-  if (!json) return manifest.name
-  return path.parse(json.packages[platform].url).base
+  if (!json) return
+  const pkg = json.packages[platform]
+  if (!pkg) return
+  return path.parse(pkg.url).base
 }
 
 // check version
