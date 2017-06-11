@@ -63,3 +63,22 @@ Name: "{group}\uninstall {#MyAppAliasName}"; Filename: "{uninstallexe}"
 
 [Run]
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent
+
+[Code]
+// Kill the process before installation
+function InitializeSetup(): Boolean;
+  var ErrorCode: Integer;
+  begin
+    ShellExec('open','taskkill.exe','/f /im {#MyAppExeName}','',SW_HIDE,ewNoWait,ErrorCode);
+    ShellExec('open','tskill.exe',' {#MyAppName}','',SW_HIDE,ewNoWait,ErrorCode);
+    result := True;
+  end;
+
+// Kill the process before uninstall
+function InitializeUninstall(): Boolean;
+  var ErrorCode: Integer;
+  begin
+    ShellExec('open','taskkill.exe','/f /im {#MyAppExeName}','',SW_HIDE,ewNoWait,ErrorCode);
+    ShellExec('open','tskill.exe',' {#MyAppName}','',SW_HIDE,ewNoWait,ErrorCode);
+    result := True;
+  end;
