@@ -55,7 +55,7 @@ function makeExeSetup(opt) {
         .replace(/_appPublisher_/g, appPublisher)
         .replace(/_appURL_/g, appURL)
         .replace(/_appId_/g, appId)
-
+        .replace(/_platform_/g, platform === 'win64' ? '64' : '')
 
       fs.writeFile(tmpIssPath, iconv.encode(str, 'gbk'), null, function (err) {
         if (err) return reject(err)
