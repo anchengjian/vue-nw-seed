@@ -1,4 +1,5 @@
-var innosetupCompiler = require('innosetup-compiler')
+// var innosetupCompiler = require('innosetup-compiler')
+var innosetupCompiler = require('../deps/innosetup')
 var path = require('path')
 var fs = require('fs')
 var iconv = require('iconv-lite')

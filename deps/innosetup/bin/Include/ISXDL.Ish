@@ -1,0 +1,39 @@
+#ifndef _ISXDL_ISH_
+
+  #Define _ISXDL_ISH_ __PATHFILENAME__
+  #expr Plugin_Init
+
+  #define ISXDL_DLL "isxdl.dll"
+  #expr AddAutoPDirs( ISXDL_DLL )
+
+[Files]
+Source: {#PluginDir}\{#ISXDL_DLL}; DestDir: {#Plugin_DestDir}; Flags: {#Plugin_FileFlags}
+
+[Code]
+function isxdl_Download(hWnd: Integer; URL, Filename: PChar): Integer;
+external 'isxdl_Download@{#Plugin_CodeDir(ISXDL_DLL)} {#Plugin_CodeFlags}';
+
+procedure isxdl_AddFile(URL, Filename: PChar);
+external 'isxdl_AddFile@{#Plugin_CodeDir(ISXDL_DLL)} {#Plugin_CodeFlags}';
+
+procedure isxdl_AddFileSize(URL, Filename: PChar; Size: Cardinal);
+external 'isxdl_AddFileSize@{#Plugin_CodeDir(ISXDL_DLL)} {#Plugin_CodeFlags}';
+
+function isxdl_DownloadFiles(hWnd: Integer): Integer;
+external 'isxdl_DownloadFiles@{#Plugin_CodeDir(ISXDL_DLL)} {#Plugin_CodeFlags}';
+
+procedure isxdl_ClearFiles;
+external 'isxdl_ClearFiles@{#Plugin_CodeDir(ISXDL_DLL)} {#Plugin_CodeFlags}';
+
+function isxdl_IsConnected: Integer;
+external 'isxdl_IsConnected@{#Plugin_CodeDir(ISXDL_DLL)} {#Plugin_CodeFlags}';
+
+function isxdl_SetOption(Option, Value: PChar): Integer;
+external 'isxdl_SetOption@{#Plugin_CodeDir(ISXDL_DLL)} {#Plugin_CodeFlags}';
+
+function isxdl_GetFileName(URL: PChar): PChar;
+external 'isxdl_GetFileName@{#Plugin_CodeDir(ISXDL_DLL)} {#Plugin_CodeFlags}';
+
+[/Code]
+#endif
+

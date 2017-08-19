@@ -1,0 +1,3395 @@
+(*********************************************************************************)
+(*                                                                               *)
+(* Below is the list of support classes that can be used from within the Pascal  *)
+(* script. There are also three support objects available: MainForm of type      *)
+(* TMainForm, WizardForm of type TWizardForm and UninstallProgressForm of type   *)
+(* TUninstallProgressForm and one special constant: crHand of type               *)
+(* TControl.Cursor.                                                              *)
+(* Note: MainForm is only visible if WindowVisible is set to yes.                *)
+(* Note: you may find it useful to also refer to the Delphi Visual Component     *)
+(* Library (VCL) Help files by Embarcadero Technologies, since the classes below *)
+(* are mostly simple wrappers around the VCL classes Inno Setup uses internally. *)
+(* See http://docs.embarcadero.com/products/rad_studio/ .                        *)
+(*                                                                               *)
+(*********************************************************************************)
+
+Type
+  AnsiString = String;
+
+  TObject = class
+    constructor Create;
+    procedure Free;
+  end;
+
+  TBits = class(TObject)
+    function OpenBit: Integer;
+    property Bits[Index: Integer]: Boolean; read write;
+    property Size: Integer; read write;
+  end;
+
+  TPersistent = class(TObject)
+    procedure Assign(Source: TPersistent);
+  end;
+
+  TStream = class(TObject)
+    function Read(Buffer: String; Count: Longint): Longint;
+    function Write(Buffer: String; Count: Longint): Longint;
+    function Seek(Offset: Longint; Origin: Word): Longint;
+    procedure ReadBuffer(Buffer: String; Count: Longint);
+    procedure WriteBuffer(Buffer: String; Count: Longint);
+    function CopyFrom(Source: TStream; Count: Longint): Longint;
+    property Position: Longint; read write;
+    property Size: Longint; read write;
+  end;
+
+  TParser = class(TObject)
+    constructor Create(Stream: TStream);
+    procedure CheckToken(T: Char);
+    procedure CheckTokenSymbol(S: String);
+    procedure Error(Ident: Integer);
+    procedure ErrorStr(Message: String);
+    procedure HexToBinary(Stream: TStream);
+    function NextToken: Char;
+    function SourcePos: Longint;
+    function TokenComponentIdent: String;
+    function TokenFloat: Extended;
+    function TokenInt: Longint;
+    function TokenString: String;
+    function TokenSymbolIs(S: String): Boolean;
+    property SourceLine: Integer; read;
+    property Token: Char; read;
+  end;
+
+  TCollectionItem = class(TPersistent)
+    constructor Create(Collection: TCollection);
+    property Collection: TCollection; read write;
+    property Index: Integer; read write;
+  end;
+
+  TCollection = class(TPersistent)
+    function Add: TCollectionItem;
+    procedure BeginUpdate;
+    procedure Clear;
+    procedure EndUpdate;
+    property Count: Integer; read;
+    property Items[Index: Integer]: TCollectionItem; read write;
+  end;
+
+  HMENU = Cardinal;
+
+  HAccel = Cardinal;
+
+  Exception = class(TObject)
+  end;
+
+  EMenuError = class(Exception)
+  end;
+
+  TMenuBreak = (mbNone, mbBreak, mbBarBreak);
+
+  TShortCut = Word;
+
+  TMenuItem = class(TComponent)
+    constructor Create(AOwner: TComponent);
+    procedure Insert(Index: Integer; Item: TMenuItem);
+    procedure Delete(Index: Integer);
+    procedure Click;
+    function IndexOf(Item: TMenuItem): Integer;
+    function GetParentComponent: TComponent;
+    function HasParent: Boolean;
+    procedure Add(Item: TMenuItem);
+    procedure Remove(Item: TMenuItem);
+    property Command: Word; read;
+    property Handle: HMENU; read;
+    property Count: Integer; read;
+    property Items[Index: Integer]: TMenuItem; read;
+    property MenuIndex: Integer; read write;
+    property Parent: TMenuItem; read;
+    property Caption: String; read write;
+    property Checked: Boolean; read write;
+    property Default: Boolean; read write;
+    property Enabled: Boolean; read write;
+    property GroupIndex: Byte; read write;
+    property HelpContext: THelpContext; read write;
+    property Hint: String; read write;
+    property RadioItem: Boolean; read write;
+    property ShortCut: TShortCut; read write;
+    property Visible: Boolean; read write;
+    property OnClick: TNotifyEvent; read write;
+  end;
+
+  TMenuChangeEvent = procedure (Sender: TObject; Source: TMenuItem; Rebuild: Boolean);
+
+  TFindItemKind = (fkCommand, fkHandle, fkShortCut);
+
+  TMenu = class(TComponent)
+    constructor Create(AOwner: TComponent);
+    function DispatchCommand(ACommand: Word): Boolean;
+    function DispatchPopup(AHandle: HMENU): Boolean;
+    function FindItem(Value: Integer; Kind: TFindItemKind): TMenuItem;
+    function GetHelpContext(Value: Integer; ByCommand: Boolean): THelpContext;
+    property Handle: HMENU; read;
+    property WindowHandle: HWnd; read write;
+    property Items: TMenuItem; read;
+  end;
+
+  TMainMenu = class(TMenu)
+    procedure Merge(Menu: TMainMenu);
+    procedure Unmerge(Menu: TMainMenu);
+    procedure PopulateOle2Menu(SharedMenu: HMENU; Groups: TArrayOfInteger; var Widths: TArrayOfInteger);
+    procedure GetOle2AcceleratorTable(var AccelTable: HAccel; var AccelCount: Integer; Groups: TArrayOfInteger);
+    procedure SetOle2MenuHandle(Handle: HMENU);
+    property AutoMerge: Boolean; read write;
+  end;
+
+  TPopupAlignment = (paLeft, paRight, paCenter);
+
+  TPopupMenu = class(TMenu)
+    constructor Create(AOwner: TComponent);
+    procedure Popup(X, Y: Integer);
+    property PopupComponent: TComponent; read write;
+    property Alignment: TPopupAlignment; read write;
+    property AutoPopup: Boolean; read write;
+    property HelpContext: THelpContext; read write;
+    property OnPopup: TNotifyEvent; read write;
+  end;
+
+  TComponentStateE = (csLoading, csReading, csWriting, csDestroying, csDesigning, csAncestor, csUpdating, csFixups, csFreeNotification, csInline, csDesignInstance);
+
+  TComponentState = set of TComponentStateE;
+  
+  TComponent = class(TPersistent)
+    function FindComponent(AName: String): TComponent;
+    constructor Create(AOwner: TComponent);
+    property Owner: TComponent; read write;
+    property Components[Index: Integer]: TComponent; read;
+    property ComponentCount: Integer; read;
+    property ComponentIndex: Integer; read write;
+    property ComponentState: Byte; read;
+    property Name: String; read write;
+    property Tag: Longint; read write;
+    procedure DestroyComponents;
+    procedure Destroying;
+    procedure FreeNotification(AComponent: TComponent);
+    procedure InsertComponent(AComponent: TComponent);
+    procedure RemoveComponent(AComponent: TComponent);
+    property DesignInfo: Longint; read write;
+  end;
+
+  TTimer = class(TComponent)
+    property Enabled: Boolean; read write;
+    property Interval: Cardinal; read write;
+    property OnTimer: TNotifyEvent; read write;
+  end;
+
+  TStrings = class(TPersistent)
+    function Add(S: String): Integer;
+    procedure Append(S: String);
+    procedure AddStrings(Strings: TStrings);
+    procedure Clear;
+    procedure Delete(Index: Integer);
+    function IndexOf(const S: String): Integer;
+    procedure Insert(Index: Integer; S: String);
+    property Count: Integer; read;
+    property Text: String; read write;
+    property CommaText: String; read write;
+    procedure LoadFromFile(FileName: String);
+    procedure SaveToFile(FileName: String);
+    property Strings[Index: Integer]: String; read write;
+    property Objects[Index: Integer]: TObject; read write;
+    procedure BeginUpdate;
+    procedure EndUpdate;
+    function Equals(Strings: TStrings): Boolean;
+    procedure Exchange(Index1, Index2: Integer);
+    function IndexOfName(Name: String): Integer;
+    procedure LoadFromStream(Stream: TStream);
+    procedure Move(CurIndex, NewIndex: Integer);
+    procedure SaveToStream(Stream: TStream);
+    procedure SetText(Text: PChar);
+    property Names[Index: Integer]: String; read;
+    property Values[Name: String]: String; read write;
+    function AddObject(S: String; AObject: TObject): Integer;
+    function GetText: PChar;
+    function IndexOfObject(AObject: TObject): Integer;
+    procedure InsertObject(Index: Integer; S: String; AObject: TObject);
+  end;
+
+  TAlignment = (taLeftJustify, taRightJustify, taCenter);
+
+  THelpEvent = function (Command: Word; Data: Longint; var CallHelp: Boolean): Boolean;
+
+  TGetStrProc = procedure(const S: String);
+
+  TDuplicates = (dupIgnore, dupAccept, dupError);
+
+  TOperation = (opInsert, opRemove);
+
+  THandle = Longint;
+
+  TNotifyEvent = procedure(Sender: TObject);
+
+  TStringList = class(TStrings)
+    function Find(S: String; var Index: Integer): Boolean;
+    procedure Sort;
+    property Duplicates: TDuplicates; read write;
+    property Sorted: Boolean; read write;
+    property OnChange: TNotifyEvent; read write;
+    property OnChanging: TNotifyEvent; read write;
+  end;
+
+  THandleStream = class(TStream)
+    constructor Create(AHandle: Integer);
+    property Handle: Integer; read;
+  end;
+
+  TFileStream = class(THandleStream)
+    constructor Create(Filename: String; Mode: Word);
+  end;
+
+  TCustomMemoryStream = class(TStream)
+    procedure SaveToStream(Stream: TStream);
+    procedure SaveToFile(FileName: String);
+  end;
+
+  TMemoryStream = class(TCustomMemoryStream)
+    procedure Clear;
+    procedure LoadFromStream(Stream: TStream);
+    procedure LoadFromFile(FileName: String);
+    procedure SetSize(NewSize: Longint);
+  end;
+
+  TResourceStream = class(TCustomMemoryStream)
+    constructor Create(Instance: THandle; ResName: String; ResType: Integer);
+    constructor CreateFromID(Instance: THandle; ResID: Integer; ResType: Integer);
+  end;
+
+  TGraphicsObject = class(TPersistent)
+    property OnChange: TNotifyEvent; read write;
+  end;
+
+  TFontStyle = (fsBold, fsItalic, fsUnderline, fsStrikeOut);
+
+  TFontStyles = set of TFontStyle;
+
+  TFontPitch = (fpDefault, fpVariable, fpFixed);
+
+  TFont = class(TGraphicsObject)
+    constructor Create;
+    property Handle: Integer; read;
+    property Color: Integer; read write;
+    property Height: Integer; read write;
+    property Name: String; read write;
+    property Pitch: Byte; read write;
+    property Size: Integer; read write;
+    property PixelsPerInch: Integer; read write;
+    property Style: TFontStyles; read write;
+  end;
+
+  TRect = record
+    Left, Top, Right, Bottom: Integer;
+  end;
+  
+  TPenMode = (pmBlack, pmWhite, pmNop, pmNot, pmCopy, pmNotCopy, pmMergePenNot, pmMaskPenNot, pmMergeNotPen, pmMaskNotPen, pmMerge, pmNotMerge, pmMask, pmNotMask, pmXor, pmNotXor);
+
+  TPenStyle = (psSolid, psDash, psDot, psDashDot, psDashDotDot, psClear, psInsideFrame);
+
+  TPen = class(TGraphicsObject)
+    constructor Create;
+    property Color: TColor; read write;
+    property Mode: TPenMode; read write;
+    property Style: TPenStyle; read write;
+    property Width: Integer; read write;
+  end;
+
+  TBrushStyle = (bsSolid, bsClear, bsHorizontal, bsVertical, bsFDiagonal, bsBDiagonal, bsCross, bsDiagCross);
+
+  TColor = integer;
+
+  HBITMAP = Integer;
+
+  HPALETTE = Integer;
+
+  TBrush = class(TGraphicsObject)
+    constructor Create;
+    property Color: TColor; read write;
+    property Style: TBrushStyle; read write;
+  end;
+
+  TCanvas = class(TPersistent)
+    procedure Arc(X1, Y1, X2, Y2, X3, Y3, X4, Y4: Integer);
+    procedure Chord(X1, Y1, X2, Y2, X3, Y3, X4, Y4: Integer);
+    procedure Draw(X, Y: Integer; Graphic: TGraphic);
+    procedure Ellipse(X1, Y1, X2, Y2: Integer);
+    procedure FillRect(const Rect: TRect);
+    procedure FloodFill(X, Y: Integer; Color: TColor; FillStyle: Byte);
+    procedure LineTo(X, Y: Integer);
+    procedure MoveTo(X, Y: Integer);
+    procedure Pie(X1, Y1, X2, Y2, X3, Y3, X4, Y4: Integer);
+    procedure Rectangle(X1, Y1, X2, Y2: Integer);
+    procedure Refresh;
+    procedure RoundRect(X1, Y1, X2, Y2, X3, Y3: Integer);
+    function TextHeight(Text: String): Integer;
+    procedure TextOut(X, Y: Integer; Text: String);
+    function TextWidth(Text: String): Integer;
+    property Handle: Integer; read write;
+    property Pixels: Integer; read write;
+    property Brush: TBrush; read;
+    property CopyMode: Byte; read write;
+    property Font: TFont; read;
+    property Pen: TPen; read;
+  end;
+
+  TGraphic = class(TPersistent)
+    procedure LoadFromFile(const Filename: String);
+    procedure SaveToFile(const Filename: String);
+    property Empty: Boolean; read write;
+    property Height: Integer; read write;
+    property Modified: Boolean; read write;
+    property Width: Integer; read write;
+    property OnChange: TNotifyEvent; read write;
+  end;
+
+  TBitmap = class(TGraphic)
+    procedure LoadFromStream(Stream: TStream);
+    procedure SaveToStream(Stream: TStream);
+    property Canvas: TCanvas; read write;
+    property Handle: HBITMAP; read write;
+    procedure Dormant;
+    procedure FreeImage;
+    procedure LoadFromClipboardFormat(AFormat: Word; AData: THandle; APalette: HPALETTE);
+    procedure LoadFromResourceName(Instance: THandle; const ResName: String);
+    procedure LoadFromResourceID(Instance: THandle; ResID: Integer);
+    function ReleaseHandle: HBITMAP;
+    function ReleasePalette: HPALETTE;
+    procedure SaveToClipboardFormat(var AFormat: Word; var AData: THandle; var APalette: HPALETTE);
+    property Monochrome: Boolean; read write;
+    property Palette: HPALETTE; read write;
+    property IgnorePalette: Boolean; read write;
+    property TransparentColor: TColor; read;
+  end;
+
+  HICON = Integer;
+
+  TIcon = class(TGraphic)
+    procedure LoadFromStream(Stream: TStream);
+    procedure SaveToStream(Stream: TStream);
+    function ReleaseHandle: HICON;
+    property Handle: HICON; read write;
+  end;
+
+  TNewIcon = class(TGraphic)
+    procedure LoadFromStream(Stream: TStream);
+    procedure SaveToStream(Stream: TStream);
+    procedure LoadFromResourceName(Instance: THandle; const ResName: String);
+    procedure LoadFromResourceID(Instance: THandle; ResID: Integer);
+    function ReleaseHandle: HICON;
+    property Handle: HICON; read write;
+  end;
+
+  TAlign = (alNone, alTop, alBottom, alLeft, alRight, alClient);
+
+  TDragMode = (dmManual, dmAutomatic);
+  
+  TDragState = (dsDragEnter, dsDragLeave, dsDragMove);
+  
+  TDragKind = (dkDrag, dkDock);
+  
+  TDragOverEvent = procedure(Sender, Source: TObject; X, Y: Integer; State: TDragState; var Accept: Boolean);
+  
+  TDragDropEvent = procedure(Sender, Source: TObject;X, Y: Integer);
+  
+  TEndDragEvent = procedure(Sender, Target: TObject; X, Y: Integer);
+
+  TDragObject = class(TObject)
+    function GetName: String;
+    procedure HideDragImage;
+    function Instance: Longint;
+    procedure ShowDragImage;
+  end;
+
+  TStartDragEvent = procedure(Sender: TObject; var DragObject: TDragObject);
+
+  TControl = class(TComponent)
+    constructor Create(AOwner: TComponent);
+    procedure BringToFront;
+    procedure Hide;
+    procedure Invalidate;
+    procedure Refresh;
+    procedure Repaint;
+    procedure SendToBack;
+    procedure Show;
+    procedure Update;
+    procedure SetBounds(ALeft, ATop, AWidth, AHeight: Integer);
+    property Parent: TWinControl; read write;
+    property Left: Integer; read write;
+    property Top: Integer; read write;
+    property Width: Integer; read write;
+    property Height: Integer; read write;
+    property Hint: String; read write;
+    property Align: TAlign; read write;
+    property ClientHeight: Longint; read write;
+    property ClientWidth: Longint; read write;
+    property ShowHint: Boolean; read write;
+    property ParentShowHint: Boolean; read write;
+    property Visible: Boolean; read write;
+    property Enabled: Boolean; read write;
+    property Cursor: Integer; read write;
+    function Dragging: Boolean;
+    function HasParent: Boolean;
+    procedure BeginDrag(Immediate: Boolean);
+    function ClientToScreen(Point: TPoint): TPoint;
+    procedure EndDrag(Drop: Boolean);
+    function GetTextBuf(Buffer: PChar; BufSize: Integer): Integer;
+    function GetTextLen: Integer;
+    procedure SetTextBuf(Buffer: PChar);
+    function Perform(Msg: Cardinal; WParam, LParam: Longint): Longint;
+    function ScreenToClient(Point: TPoint): TPoint;
+  end;
+
+  TWinControl = class(TControl)
+    property Handle: Longint; read write;
+    property Showing: Boolean; read;
+    property TabOrder: Integer; read write;
+    property TabStop: Boolean; read write;
+    function CanFocus: Boolean;
+    function Focused: Boolean;
+    property Controls[Index: Integer]: TControl; read;
+    property ControlCount: Integer; read;
+    function HandleAllocated: Boolean;
+    procedure HandleNeeded;
+    procedure EnableAlign;
+    procedure RemoveControl(AControl: TControl);
+    procedure InsertControl(AControl: TControl);
+    procedure Realign;
+    procedure ScaleBy(M, D: Integer);
+    procedure ScrollBy(DeltaX, DeltaY: Integer);
+    procedure SetFocus;
+    procedure PaintTo(DC: HDC; X, Y: Integer);
+    function ContainsControl(Control: TControl): Boolean;
+    procedure DisableAlign;
+    procedure UpdateControlState;
+    property Brush: TBrush; read;
+    property HelpContext: Longint; read write;
+  end;
+
+  TGraphicControl = class(TControl)
+  end;
+
+  TCustomControl = class(TWinControl)
+  end;
+
+  TFieldChangeEvent = procedure(Sender: TObject; OldField, Value: Byte);
+
+  TIPAddressEdit = class(TCustomControl)
+    procedure SetFieldFocus(Field: Byte);
+    function IsBlank: Boolean;
+    property Field1Value: Byte; read write;
+    property Field2Value: Byte; read write;
+    property Field3Value: Byte; read write;
+    property Field4Value: Byte; read write;
+    property Field1Max: Byte; read write;
+    property Field1Min: Byte; read write;
+    property Field2Max: Byte; read write;
+    property Field2Min: Byte; read write;
+    property Field3Max: Byte; read write;
+    property Field3Min: Byte; read write;
+    property Field4Max: Byte; read write;
+    property Field4Min: Byte; read write;
+    property IPValue: LongWord; read write;
+    property OnChange: TNotifyEvent; read write;
+    property OnEnter: TNotifyEvent; read write;
+    property OnExit: TNotifyEvent; read write;
+    property OnFieldChange: TFieldChangeEvent; read write;
+    property InitClear: Boolean; read write;
+    property Color: TColor; read write;
+    property Font: TFont; read write;
+    property ParentColor: Boolean; read write;
+    property ParentFont: Boolean; read write;
+  end;
+
+  TNewGroupBox = class(TCustomControl)
+    property Caption: String; read write;
+    property Color: TColor; read write;
+    property Font: TFont; read write;
+    property ParentColor: Boolean; read write;
+    property ParentFont: Boolean; read write;
+    property OnClick: TNotifyEvent; read write;
+    property OnDblClick: TNotifyEvent; read write;
+    property OnEnter: TNotifyEvent; read write;
+    property OnExit: TNotifyEvent; read write;
+    property Ctl3D: Boolean; read write;
+    property DragCursor: Longint; read write;
+    property DragMode: TDragMode; read write;
+    property ParentCtl3D: Boolean; read write;
+    property PopupMenu: TPopupMenu; read write;
+    property OnDragDrop: TDragDropEvent; read write;
+    property OnDragOver: TDragOverEvent; read write;
+    property OnEndDrag: TEndDragEvent; read write;
+    property OnMouseDown: TMouseEvent; read write;
+    property OnMouseMove: TMouseMoveEvent; read write;
+    property OnMouseUp: TMouseEvent; read write;
+    property OnStartDrag: TStartDragEvent; read write;
+    property ParentBackground: Boolean; read write;
+    property OnMouseEnter: TNotifyEvent; read write;
+    property OnMouseLeave: TNotifyEvent; read write;
+  end;
+
+  TScrollBarKind = (sbHorizontal, sbVertical);
+
+  TScrollBarInc = SmallInt;
+
+  TControlScrollBar = class(TPersistent)
+    property Kind: TScrollBarKind; read;
+    property ScrollPos: Integer; read;
+    property Margin: Word; read write;
+    property Increment: TScrollBarInc; read write;
+    property Range: Integer; read write;
+    property Position: Integer; read write;
+    property Tracking: Boolean; read write;
+    property Visible: Boolean; read write;
+  end;
+
+  TScrollingWinControl = class(TWinControl)
+    procedure ScrollInView(AControl: TControl);
+    property HorzScrollBar: TControlScrollBar; read write;
+    property VertScrollBar: TControlScrollBar; read write;
+  end;
+
+  TIdleEvent = procedure(Sender: TObject; var Done: Boolean);
+
+  TFormBorderStyle = (bsNone, bsSingle, bsSizeable, bsDialog, bsToolWindow, bsSizeToolWin);
+  TBorderStyle = TFormBorderStyle;
+
+  TWindowState = (wsNormal, wsMinimized, wsMaximized);
+
+  TFormStyle = (fsNormal, fsMDIChild, fsMDIForm, fsStayOnTop);
+
+  TBorderIcon = (biSystemMenu, biMinimize, biMaximize, biHelp);
+  TBorderIcons = set of TBorderIcon;
+
+  TPosition = (poDesigned, poDefault, poDefaultPosOnly, poDefaultSizeOnly, poScreenCenter, poDesktopCenter, poMainFormCenter, poOwnerFormCenter);
+
+  TPrintScale = (poNone, poProportional, poPrintToFit);
+
+  TCloseAction = (caNone, caHide, caFree, caMinimize);
+
+  TCloseEvent = procedure(Sender: TObject; var Action: TCloseAction);
+
+  TCloseQueryEvent = procedure(Sender: TObject; var CanClose: Boolean);
+
+  TEShiftState = (ssShift, ssAlt, ssCtrl, ssLeft, ssRight, ssMiddle, ssDouble);
+  TShiftState = set of TEShiftState;
+
+  TKeyEvent = procedure(Sender: TObject; var Key: Word; Shift: TShiftState);
+
+  TKeyPressEvent = procedure(Sender: TObject; var Key: Char);
+
+  THelpContext = Longint;
+
+  TScrollBox = class(TScrollingWinControl)
+    property BorderStyle: TBorderStyle; read write;
+    property Color: TColor; read write;
+    property Font: TFont; read write;
+    property AutoScroll: Boolean; read write;
+    property ParentColor: Boolean; read write;
+    property ParentFont: Boolean; read write;
+    property OnClick: TNotifyEvent; read write;
+    property OnDblClick: TNotifyEvent; read write;
+    property OnEnter: TNotifyEvent; read write;
+    property OnExit: TNotifyEvent; read write;
+    property OnResize: TNotifyEvent; read write;
+    property DragCursor: TCursor; read write;
+    property DragMode: TDragMode; read write;
+    property PopupMenu: TPopupMenu; read write;
+    property Ctl3D: Boolean; read write;
+    property ParentCtl3D: Boolean; read write;
+    property OnDragDrop: TDragDropEvent; read write;
+    property OnDragOver: TDragOverEvent; read write;
+    property OnEndDrag: TEndDragEvent; read write;
+    property OnMouseDown: TMouseEvent; read write;
+    property OnMouseMove: TMouseMoveEvent; read write;
+    property OnMouseUp: TMouseEvent; read write;
+    property OnMouseEnter: TNotifyEvent; read write;
+    property OnMouseLeave: TNotifyEvent; read write;
+  end;
+
+  TTileMode = (tbHorizontal, tbVertical);
+
+  TForm = class(TScrollingWinControl)
+    constructor CreateNew(AOwner: TComponent);
+    procedure Close;
+    procedure Hide;
+    procedure Show;
+    function ShowModal: Integer;
+    procedure Release;
+    property Active: Boolean; read;
+    property ActiveControl: TWinControl; read write;
+    property BorderIcons: TBorderIcons; read write;
+    property BorderStyle: TFormBorderStyle; read write;
+    property Caption: String; read write;
+    property AutoScroll: Boolean; read write;
+    property Color: TColor; read write;
+    property Font: TFont; read write;
+    property FormStyle: TFormStyle; read write;
+    property KeyPreview: Boolean; read write;
+    property Position: TPosition; read write;
+    property OnActivate: TNotifyEvent; read write;
+    property OnClick: TNotifyEvent; read write;
+    property OnDblClick: TNotifyEvent; read write;
+    property OnClose: TCloseEvent; read write;
+    property OnCloseQuery: TCloseQueryEvent; read write;
+    property OnCreate: TNotifyEvent; read write;
+    property OnDestroy: TNotifyEvent; read write;
+    property OnDeactivate: TNotifyEvent; read write;
+    property OnHide: TNotifyEvent; read write;
+    property OnKeyDown: TKeyEvent; read write;
+    property OnKeyPress: TKeyPressEvent; read write;
+    property OnKeyUp: TKeyEvent; read write;
+    property OnResize: TNotifyEvent; read write;
+    property OnShow: TNotifyEvent; read write;
+    procedure ArrangeIcons;
+    procedure Print;
+    procedure SendCancelMode(Sender: TControl);
+    property ActiveOLEControl: TWinControl; read write;
+    property OleFormObject: TOLEFORMOBJECT; read write;
+    property ClientHandle: Longint; read;
+    property TileMode: TTileMode; read write;
+    procedure Cascade;
+    function CloseQuery: Boolean;
+    procedure DefocusControl(Control: TWinControl; Removing: Boolean);
+    procedure FocusControl(Control: TWinControl);
+    procedure Next;
+    procedure Previous;
+    function SetFocusedControl(Control: TWinControl): Boolean;
+    procedure Tile;
+    property ActiveMDIChild: TForm; read;
+    property Canvas: TCanvas; read;
+    property DropTarget: Boolean; read write;
+    property ModalResult: Longint; read write;
+    property MDIChildCount: Integer; read;
+    property MDIChildren[I: Integer]: TForm; read;
+    property Icon: TIcon; read write;
+    property Menu: TMainMenu; read write;
+    property ObjectMenuItem: TMenuItem; read write;
+    property PixelsPerInch: Integer; read write;
+    property PrintScale: TPrintScale; read write;
+    property Scaled: Boolean; read write;
+    property WindowState: TWindowState; read write;
+    property WindowMenu: TMenuItem; read write;
+    property Ctl3D: Boolean; read write;
+    property PopupMenu: TPopupMenu; read write;
+    property OnDragDrop: TDragDropEvent; read write;
+    property OnDockOver: TDockOverEvent; read write;
+    property OnMouseDown: TMouseEvent; read write;
+    property OnMouseMove: TMouseMoveEvent; read write;
+    property OnMouseUp: TMouseEvent; read write;
+    property OnPaint: TNotifyEvent; read write;
+    property OnMouseEnter: TNotifyEvent; read write;
+    property OnMouseLeave: TNotifyEvent; read write;
+  end;
+
+  TMsg = record
+    hwnd: HWND;
+    message: LongWord;
+    wParam: Longint;
+    lParam: Longint;
+    time: LongWord;
+    pt: TPoint;
+  end;
+
+  TMessageEvent = procedure (var Msg: TMsg; var Handled: Boolean);
+
+  TApplication = class(TComponent)
+    procedure BringToFront;
+    function MessageBox(Text, Caption: PChar; Flags: Word): Integer;
+    procedure Minimize;
+    procedure ProcessMessages;
+    procedure Restore;
+    procedure Terminate;
+    property Active: Boolean; read;
+    property ExeName: String; read;
+    property Handle: Longint; read;
+    property UpdateFormatSettings: Boolean; read write;
+    property Hint: String; read write;
+    property MainForm: TForm; read;
+    property ShowHint: Boolean; read write;
+    property ShowMainForm: Boolean; read write;
+    property Terminated: Boolean; read;
+    property Title: String; read write;
+    property OnActivate: TNotifyEvent; read write;
+    property OnDeactivate: TNotifyEvent; read write;
+    property OnIdle: TIdleEvent; read write;
+    property OnHint: TNotifyEvent; read write;
+    property OnMinimize: TNotifyEvent; read write;
+    property OnRestore: TNotifyEvent; read write;
+    procedure ControlDestroyed(Control: TControl);
+    procedure CancelHint;
+    procedure HandleException(Sender: TObject);
+    procedure HandleMessage;
+    procedure HideHint;
+    procedure Initalize;
+    procedure NormalizeTopMosts;
+    procedure RestoreTopMosts;
+    procedure Run;
+    function HelpCommand(Command: Integer; Data: Longint): Boolean;
+    function HelpContext(Context: THelpContext): Boolean;
+    function HelpJump(JumpID: String): Boolean;
+    property DialogHandle: Longint; read write;
+    procedure CreateHandle;
+    property HelpFile: String; read write;
+    property HintColor: TColor; read write;
+    property HintPause: Integer; read write;
+    property HintShortPause: Integer; read write;
+    property HintHidePause: Integer; read write;
+    property Icon: TIcon; read write;
+    property OnHelp: THelpEvent; read write;
+    property OnMessage: TMessageEvent; read write;
+  end;
+
+  TScreen = class(TComponent)
+    property ActiveControl: TWinControl; read;
+    property ActiveForm: TForm; read;
+    property Cursor: TCursor; read write;
+    property Cursors[Index: Integer]: Longword; read write;
+    property FormCount: Integer; read;
+    property Forms[Index: Integer]: TForm; read;
+    property Fonts: TStrings; read;
+    property Height: Integer; read;
+    property Width: Integer; read;
+    property PixelsPerInch: Integer; read;
+    property OnActiveControlChange: TNotifyEvent; read write;
+    property OnActiveFormChange: TNotifyEvent; read write;
+  end;
+
+  TCustomLabel = class(TGraphicControl)
+  end;
+
+  TMouseButton = (mbLeft, mbRight, mbMiddle);
+
+  TMouseEvent = procedure (Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
+  
+  TMouseMoveEvent = procedure(Sender: TObject; Shift: TShiftState; X, Y: Integer);
+
+  HWND = Longint;
+
+  TAnchorKind = (akTop, akLeft, akRight, akBottom);
+  TAnchors = set of TAnchorKind;
+
+  TModalResult = Integer;
+
+  TCursor = Integer;
+
+  TPoint = record
+    x, y: Longint;
+  end;
+
+  TLabel = class(TCustomLabel)
+    property Alignment: TAlignment; read write;
+    property AutoSize: Boolean; read write;
+    property Caption: String; read write;
+    property Color: TColor; read write;
+    property FocusControl: TWinControl; read write;
+    property Font: TFont; read write;
+    property ParentColor: Boolean; read write;
+    property ParentFont: Boolean; read write;
+    property Transparent: Boolean; read write;
+    property WordWrap: Boolean; read write;
+    property OnClick: TNotifyEvent; read write;
+    property OnDblClick: TNotifyEvent; read write;
+    property OnMouseDown: TMouseEvent; read write;
+    property OnMouseMove: TMouseMoveEvent; read write;
+    property OnMouseUp: TMouseEvent; read write;
+    property DragCursor: Longint; read write;
+    property DragMode: TDragMode; read write;
+    property OnDragDrop: TDragDropEvent; read write;
+    property OnDragOver: TDragOverEvent; read write;
+    property OnStartDrag: TStartDragEvent; read write;
+    property OnEndDrag: TEndDragEvent; read write;
+    property ShowAccelChar: Boolean; read write;
+    property OnMouseEnter: TNotifyEvent; read write;
+    property OnMouseLeave: TNotifyEvent; read write;
+  end;
+
+  TCustomEdit = class(TWinControl)
+    procedure Clear;
+    procedure ClearSelection;
+    procedure SelectAll;
+    property Modified: Boolean; read write;
+    property SelLength: Integer; read write;
+    property SelStart: Integer; read write;
+    property SelText: String; read write;
+    property Text: String; read write;
+    procedure CopyToClipboard;
+    procedure CutToClipboard;
+    procedure PasteFromClipboard;
+    function GetSelTextBuf(Buffer: PChar; BufSize: Integer): Integer;
+    procedure SetSelTextBuf(Buffer: PChar);
+  end;
+
+  TEditCharCase = (ecNormal, ecUpperCase, ecLowerCase);
+
+  TEdit = class(TCustomEdit)
+    property AutoSelect: Boolean; read write;
+    property AutoSize: Boolean; read write;
+    property BorderStyle: TBorderStyle; read write;
+    property CharCase: TEditCharCase; read write;
+    property Color: TColor; read write;
+    property Font: TFont; read write;
+    property HideSelection: Boolean; read write;
+    property MaxLength: Integer; read write;
+    property ParentColor: Boolean; read write;
+    property ParentFont: Boolean; read write;
+    property PasswordChar: Char; read write;
+    property ReadOnly: Boolean; read write;
+    property Text: String; read write;
+    property OnChange: TNotifyEvent; read write;
+    property OnClick: TNotifyEvent; read write;
+    property OnDblClick: TNotifyEvent; read write;
+    property OnEnter: TNotifyEvent; read write;
+    property OnExit: TNotifyEvent; read write;
+    property OnKeyDown: TKeyEvent; read write;
+    property OnKeyPress: TKeyPressEvent; read write;
+    property OnKeyUp: TKeyEvent; read write;
+    property Ctl3D: Boolean; read write;
+    property DragCursor: Longint; read write;
+    property DragMode: TDragMode; read write;
+    property OEMConvert: Boolean; read write;
+    property ParentCtl3D: Boolean; read write;
+    property PopupMenu: TPopupMenu; read write;
+    property OnDragDrop: TDragDropEvent; read write;
+    property OnDragOver: TDragOverEvent; read write;
+    property OnEndDrag: TEndDragEvent; read write;
+    property OnMouseDown: TMouseEvent; read write;
+    property OnMouseMove: TMouseMoveEvent; read write;
+    property OnMouseUp: TMouseEvent; read write;
+    property OnStartDrag: TStartDragEvent; read write;
+    property OnMouseEnter: TNotifyEvent; read write;
+    property OnMouseLeave: TNotifyEvent; read write;
+  end;
+
+  TNewEdit = class(TEdit)
+  end;
+
+  TCustomMemo = class(TCustomEdit)
+    property Lines: TStrings; read write;
+  end;
+
+  TScrollStyle = (ssNone, ssHorizontal, ssVertical, ssBoth);
+
+  TMemo = class(TCustomMemo)
+    property Alignment: TAlignment; read write;
+    property BorderStyle: TBorderStyle; read write;
+    property Color: TColor; read write;
+    property Font: TFont; read write;
+    property HideSelection: Boolean; read write;
+    property MaxLength: Integer; read write;
+    property ParentColor: Boolean; read write;
+    property ParentFont: Boolean; read write;
+    property ReadOnly: Boolean; read write;
+    property ScrollBars: TScrollStyle; read write;
+    property WantReturns: Boolean; read write;
+    property WantTabs: Boolean; read write;
+    property WordWrap: Boolean; read write;
+    property OnChange: TNotifyEvent; read write;
+    property OnClick: TNotifyEvent; read write;
+    property OnDblClick: TNotifyEvent; read write;
+    property OnEnter: TNotifyEvent; read write;
+    property OnExit: TNotifyEvent; read write;
+    property OnKeyDown: TKeyEvent; read write;
+    property OnKeyPress: TKeyPressEvent; read write;
+    property OnKeyUp: TKeyEvent; read write;
+    property Ctl3D: Boolean; read write;
+    property DragCursor: Longint; read write;
+    property DragMode: TDragMode; read write;
+    property OEMConvert: Boolean; read write;
+    property ParentCtl3D: Boolean; read write;
+    property PopupMenu: TPopupMenu; read write;
+    property OnDragDrop: TDragDropEvent; read write;
+    property OnDragOver: TDragOverEvent; read write;
+    property OnEndDrag: TEndDragEvent; read write;
+    property OnMouseDown: TMouseEvent; read write;
+    property OnMouseMove: TMouseMoveEvent; read write;
+    property OnMouseUp: TMouseEvent; read write;
+    property OnStartDrag: TStartDragEvent; read write;
+    property OnMouseEnter: TNotifyEvent; read write;
+    property OnMouseLeave: TNotifyEvent; read write;
+  end;
+
+  TNewMemo = class(TMemo)
+  end;
+
+  TCustomComboBox = class(TWinControl)
+    property DroppedDown: Boolean; read write;
+    property Items: TStrings; read write;
+    property ItemIndex: Integer; read write;
+    procedure Clear;
+    procedure SelectAll;
+    property Canvas: TCanvas; read;
+    property SelLength: Integer; read write;
+    property SelStart: Integer; read write;
+    property SelText: String; read write;
+  end;
+
+  TComboBoxStyle = (csDropDown, csSimple, csDropDownList, csOwnerDrawFixed, csOwnerDrawVariable);
+
+  TDrawItemEvent = procedure(Control: TWinControl; Index: Integer; Rect: TRect; State: Byte);
+
+  TMeasureItemEvent = procedure(Control: TWinControl; Index: Integer; var Height: Integer);
+
+  TComboBox = class(TCustomComboBox)
+    property Style: TComboBoxStyle; read write;
+    property Color: TColor; read write;
+    property DropDownCount: Integer; read write;
+    property Font: TFont; read write;
+    property MaxLength: Integer; read write;
+    property ParentColor: Boolean; read write;
+    property ParentFont: Boolean; read write;
+    property Sorted: Boolean; read write;
+    property Text: String; read write;
+    property OnChange: TNotifyEvent; read write;
+    property OnClick: TNotifyEvent; read write;
+    property OnDblClick: TNotifyEvent; read write;
+    property OnDropDown: TNotifyEvent; read write;
+    property OnEnter: TNotifyEvent; read write;
+    property OnExit: TNotifyEvent; read write;
+    property OnKeyDown: TKeyEvent; read write;
+    property OnKeyPress: TKeyPressEvent; read write;
+    property OnKeyUp: TKeyEvent; read write;
+    property Ctl3D: Boolean; read write;
+    property DragMode: TDragMode; read write;
+    property DragCursor: Longint; read write;
+    property ItemHeight: Integer; read write;
+    property ParentCtl3D: Boolean; read write;
+    property PopupMenu: TPopupMenu; read write;
+    property OnDragDrop: TDragDropEvent; read write;
+    property OnDragOver: TDragOverEvent; read write;
+    property OnDrawItem: TDrawItemEvent; read write;
+    property OnEndDrag: TEndDragEvent; read write;
+    property OnMeasureItem: TMeasureItemEvent; read write;
+    property OnStartDrag: TStartDragEvent; read write;
+  end;
+
+  TNewComboBox = class(TComboBox)
+  end;
+
+  TButtonControl = class(TWinControl)
+  end;
+
+  TButton = class(TButtonControl)
+    procedure Click;
+    property Cancel: Boolean; read write;
+    property Caption: String; read write;
+    property Default: Boolean; read write;
+    property Font: TFont; read write;
+    property ModalResult: Longint; read write;
+    property ParentFont: Boolean; read write;
+    property OnClick: TNotifyEvent; read write;
+    property OnEnter: TNotifyEvent; read write;
+    property OnExit: TNotifyEvent; read write;
+    property DragCursor: Longint; read write;
+    property DragMode: TDragMode; read write;
+    property PopupMenu: TPopupMenu; read write;
+    property OnDragDrop: TDragDropEvent; read write;
+    property OnDragOver: TDragOverEvent; read write;
+    property OnEndDrag: TEndDragEvent; read write;
+    property OnKeyDown: TKeyEvent; read write;
+    property OnKeyPress: TKeyPressEvent; read write;
+    property OnKeyUp: TKeyEvent; read write;
+    property OnMouseDown: TMouseEvent; read write;
+    property OnMouseMove: TMouseMoveEvent; read write;
+    property OnMouseUp: TMouseEvent; read write;
+    property OnStartDrag: TStartDragEvent; read write;
+    property OnMouseEnter: TNotifyEvent; read write;
+    property OnMouseLeave: TNotifyEvent; read write;
+  end;
+
+  TNewButton = class(TButton)
+  end;
+
+  TCustomCheckBox = class(TButtonControl)
+  end;
+
+  TCheckBoxState = (cbUnchecked, cbChecked, cbGrayed);
+
+  TCheckBox = class(TCustomCheckBox)
+    property Alignment: TAlignment; read write;
+    property AllowGrayed: Boolean; read write;
+    property Caption: String; read write;
+    property Checked: Boolean; read write;
+    property Color: TColor; read write;
+    property Font: TFont; read write;
+    property ParentColor: Boolean; read write;
+    property ParentFont: Boolean; read write;
+    property State: TCheckBoxState; read write;
+    property OnClick: TNotifyEvent; read write;
+    property OnEnter: TNotifyEvent; read write;
+    property OnExit: TNotifyEvent; read write;
+    property Ctl3D: Boolean; read write;
+    property DragCursor: Longint; read write;
+    property DragMode: TDragMode; read write;
+    property ParentCtl3D: Boolean; read write;
+    property PopupMenu: TPopupMenu; read write;
+    property OnDragDrop: TDragDropEvent; read write;
+    property OnDragOver: TDragOverEvent; read write;
+    property OnEndDrag: TEndDragEvent; read write;
+    property OnKeyDown: TKeyEvent; read write;
+    property OnKeyPress: TKeyPressEvent; read write;
+    property OnKeyUp: TKeyEvent; read write;
+    property OnMouseDown: TMouseEvent; read write;
+    property OnMouseMove: TMouseMoveEvent; read write;
+    property OnMouseUp: TMouseEvent; read write;
+    property OnStartDrag: TStartDragEvent; read write;
+    property OnMouseEnter: TNotifyEvent; read write;
+    property OnMouseLeave: TNotifyEvent; read write;
+  end;
+
+  TNewCheckBox = class(TCheckBox)
+    property ParentBackground: Boolean; read write;
+  end;
+
+  TRadioButton = class(TButtonControl)
+    property Alignment: TAlignment; read write;
+    property Caption: String; read write;
+    property Checked: Boolean; read write;
+    property Color: TColor; read write;
+    property Font: TFont; read write;
+    property ParentColor: Boolean; read write;
+    property ParentFont: Boolean; read write;
+    property OnClick: TNotifyEvent; read write;
+    property OnDblClick: TNotifyEvent; read write;
+    property OnEnter: TNotifyEvent; read write;
+    property OnExit: TNotifyEvent; read write;
+    property Ctl3D: Boolean; read write;
+    property DragCursor: Longint; read write;
+    property DragMode: TDragMode; read write;
+    property ParentCtl3D: Boolean; read write;
+    property PopupMenu: TPopupMenu; read write;
+    property OnDragDrop: TDragDropEvent; read write;
+    property OnDragOver: TDragOverEvent; read write;
+    property OnEndDrag: TEndDragEvent; read write;
+    property OnKeyDown: TKeyEvent; read write;
+    property OnKeyPress: TKeyPressEvent; read write;
+    property OnKeyUp: TKeyEvent; read write;
+    property OnMouseDown: TMouseEvent; read write;
+    property OnMouseMove: TMouseMoveEvent; read write;
+    property OnMouseUp: TMouseEvent; read write;
+    property OnStartDrag: TStartDragEvent; read write;
+    property OnMouseEnter: TNotifyEvent; read write;
+    property OnMouseLeave: TNotifyEvent; read write;
+  end;
+
+  TNewRadioButton = class(TRadioButton)
+    property ParentBackground: Boolean; read write;
+  end;
+
+  TCustomListBox = class(TWinControl)
+    property Items: TStrings; read write;
+    property ItemIndex: Integer; read write;
+    property SelCount: Integer; read;
+    property Selected[Index: Integer]: Boolean; read write;
+    procedure Clear;
+    function ItemAtPos(Pos: TPoint; Existing: Boolean): Integer;
+    function ItemRect(Index: Integer): TRect;
+    property Canvas: TCanvas; read;
+    property TopIndex: Integer; read write;
+  end;
+
+  TListBoxStyle = (lbStandard, lbOwnerDrawFixed, lbOwnerDrawVariable);
+
+  TScrollCode = (scLineUp, scLineDown, scPageUp, scPageDown, scPosition, scTrack, scTop, scBottom, scEndScroll);
+
+  TScrollEvent = procedure(Sender: TObject; ScrollCode: TScrollCode;var ScrollPos: Integer);
+
+  TEOwnerDrawState = (odSelected, odGrayed, odDisabled, odChecked, odFocused, odDefault, odHotLight, odInactive, odNoAccel, odNoFocusRect, odReserved1, odReserved2, odComboBoxEdit);
+
+  TOwnerDrawState = set of TEOwnerDrawState;
+  
+  TListBox = class(TCustomListBox)
+    property BorderStyle: TBorderStyle; read write;
+    property Color: TColor; read write;
+    property Font: TFont; read write;
+    property MultiSelect: Boolean; read write;
+    property ParentColor: Boolean; read write;
+    property ParentFont: Boolean; read write;
+    property Sorted: Boolean; read write;
+    property Style: TListBoxStyle; read write;
+    property OnClick: TNotifyEvent; read write;
+    property OnDblClick: TNotifyEvent; read write;
+    property OnEnter: TNotifyEvent; read write;
+    property OnExit: TNotifyEvent; read write;
+    property OnKeyDown: TKeyEvent; read write;
+    property OnKeyPress: TKeyPressEvent; read write;
+    property OnKeyUp: TKeyEvent; read write;
+    property Columns: Integer; read write;
+    property Ctl3D: Boolean; read write;
+    property DragCursor: Longint; read write;
+    property DragMode: TDragMode; read write;
+    property ExtendedSelect: Boolean; read write;
+    property IntegralHeight: Boolean; read write;
+    property ItemHeight: Integer; read write;
+    property ParentCtl3D: Boolean; read write;
+    property PopupMenu: TPopupMenu; read write;
+    property TabWidth: Integer; read write;
+    property OnDragDrop: TDragDropEvent; read write;
+    property OnDragOver: TDragOverEvent; read write;
+    property OnDrawItem: TDrawItemEvent; read write;
+    property OnEndDrag: TEndDragEvent; read write;
+    property OnMeasureItem: TMeasureItemEvent; read write;
+    property OnMouseDown: TMouseEvent; read write;
+    property OnMouseMove: TMouseMoveEvent; read write;
+    property OnMouseUp: TMouseEvent; read write;
+    property OnStartDrag: TStartDragEvent; read write;
+    property OnMouseEnter: TNotifyEvent; read write;
+    property OnMouseLeave: TNotifyEvent; read write;
+  end;
+
+  TNewListBox = class(TListBox)
+  end;
+
+  TScrollBar = class(TWinControl)
+    property Kind: TScrollBarKind; read write;
+    property Max: Integer; read write;
+    property Min: Integer; read write;
+    property Position: Integer; read write;
+    property OnChange: TNotifyEvent; read write;
+    property OnEnter: TNotifyEvent; read write;
+    property OnExit: TNotifyEvent; read write;
+    procedure SetParams(APosition, AMin, AMax: Integer);
+    property Ctl3D: Boolean; read write;
+    property DragCursor: Longint; read write;
+    property DragMode: TDragMode; read write;
+    property LargeChange: TScrollBarInc; read write;
+    property ParentCtl3D: Boolean; read write;
+    property PopupMenu: TPopupMenu; read write;
+    property SmallChange: TScrollBarInc; read write;
+    property OnDragDrop: TDragDropEvent; read write;
+    property OnDragOver: TDragOverEvent; read write;
+    property OnEndDrag: TEndDragEvent; read write;
+    property OnKeyDown: TKeyEvent; read write;
+    property OnKeyPress: TKeyPressEvent; read write;
+    property OnKeyUp: TKeyEvent; read write;
+    property OnScroll: TScrollEvent; read write;
+    property OnStartDrag: TStartDragEvent; read write;
+  end;
+
+  TTrackBarOrientation = (trHorizontal, trVertical);
+
+  TTickMark = (tmBottomRight, tmTopLeft, tmBoth);
+
+  TTickStyle = (tsNone, tsAuto, tsManual);
+
+  TTrackBar = class(TWinControl)
+    procedure SetTick(Value: Integer);
+    property LineSize: Integer; read write;
+    property Max: Integer; read write;
+    property Min: Integer; read write;
+    property Orientation: TTrackBarOrientation; read write;
+    property PageSize: Integer; read write;
+    property Frequency: Integer; read write;
+    property Position: Integer; read write;
+    property SelEnd: Integer; read write;
+    property SelStart: Integer; read write;
+    property ThumbLength: Integer; read write;
+    property TickMarks: TTickMark; read write;
+    property TickStyle: TTickStyle; read write;
+    property OnChange: TNotifyEvent; read write;
+  end;
+
+  TUDAlignButton = (udLeft, udRight);
+
+  TUDOrientation = (udHorizontal, udVertical);
+
+  TUDBtnType = (btNext, btPrev);
+
+  TUDClickEvent = procedure(Sender: TObject; Button: TUDBtnType);
+
+  TUDChangingEvent = procedure(Sender: TObject; var AllowChange: Boolean);
+
+  TCustomUpDown = class(TWinControl)
+  end;
+
+  TUpDown = class(TCustomUpDown)
+    property AlignButton: TUDAlignButton; read write;
+    property Associate: TWinControl; read write;
+    property ArrowKeys: Boolean; read write;
+    property Min: SmallInt; read write;
+    property Max: SmallInt; read write;
+    property Increment: Integer; read write;
+    property Orientation: TUDOrientation; read write;
+    property Position: SmallInt; read write;
+    property Thousands: Boolean; read write;
+    property Wrap: Boolean; read write;
+    property OnChanging: TUDChangingEvent; read write;
+    property OnClick: TUDClickEvent; read write;
+  end;
+
+  THKModifier = (hkShift, hkCtrl, hkAlt, hkExt);
+
+  THKModifiers = set of THKModifier;
+
+  THKInvalidKey = (hcNone, hcShift, hcCtrl, hcAlt, hcShiftCtrl, hcShiftAlt, hcCtrlAlt, hcShiftCtrlAlt);
+
+  THKInvalidKeys = set of THKInvalidKey;
+
+  TCustomHotKey = class(TWinControl)
+  end;
+
+  THotKey = class(TCustomHotKey)
+    property Color: TColor; read write;
+    property Font: TFont; read write;
+    property ParentColor: Boolean; read write;
+    property ParentFont: Boolean; read write;
+    property AutoSize: Boolean; read write;
+    property HotKey: TShortCut; read write;
+    property InvalidKeys: THKInvalidKeys; read write;
+    property Modifiers: THKModifiers; read write;
+    property PopupMenu: TPopupMenu; read write;
+    property OnEnter: TNotifyEvent; read write;
+    property OnExit: TNotifyEvent; read write;
+    property OnMouseDown: TMouseEvent; read write;
+    property OnMouseMove: TMouseMoveEvent; read write;
+    property OnMouseUp: TMouseEvent; read write;
+    property OnMouseEnter: TNotifyEvent; read write;
+    property OnMouseLeave: TNotifyEvent; read write;
+  end;
+
+  TCustomTabControl = class(TWinControl)
+  end;
+
+  TTabChangingEvent = procedure(Sender: TObject; var AllowChange: Boolean);
+
+  TTabControl = class(TCustomTabControl)
+    property ParentFont: Boolean; read write;
+    property Font: TFont; read write;
+    property DisplayRect: TRect; read;
+    property MultiLine: Boolean; read write;
+    property TabHeight: Smallint; read write;
+    property TabIndex: Integer; read write;
+    property Tabs: TStrings; read write;
+    property TabWidth: Smallint; read write;
+    property OnChange: TNotifyEvent; read write;
+    property OnChanging: TTabChangingEvent; read write;
+  end;
+
+  TTabSheet = class(TWinControl)
+    property ParentFont: Boolean; read write;
+    property Font: TFont; read write;
+    property PageControl: TPageControl; read write;
+    property Caption: String; read write;
+    property TabIndex: Integer; read;
+    property PageIndex: Integer; read write;
+    property TabVisible: Boolean; read write;
+  end;
+
+  TPageControl = class(TCustomTabControl)
+    property ParentFont: Boolean; read write;
+    property Font: TFont; read write;
+    function FindNextPage(CurPage: TTabSheet; GoForward, CheckTabVisible: Boolean): TTabSheet;
+    procedure SelectNextPage(GoForward: Boolean);
+    property PageCount: Integer; read;
+    property Pages[Index: Integer]: TTabSheet; read;
+    property ActivePage: TTabSheet; read write;
+    property MultiLine: Boolean; read write;
+    property TabHeight: Smallint; read write;
+    property TabWidth: Smallint; read write;
+    property OnChange: TNotifyEvent; read write;
+    property OnChanging: TTabChangingEvent; read write;
+  end;
+
+  TShapeType = (stRectangle, stSquare, stRoundRect, stRoundSquare, stEllipse, stCircle);
+
+  TBevelShape = (bsBox, bsFrame, bsTopLine, bsBottomLine, bsLeftLine, bsRightLine, bsSpacer);
+
+  TBevelStyle = (bsLowered, bsRaised);
+
+  TBevel = class(TGraphicControl)
+    property Shape: TBevelShape; read write;
+    property Style: TBevelStyle; read write;
+  end;
+
+  TShape = class(TGraphicControl)
+    property Brush: TBrush; read write;
+    property Pen: TPen; read write;
+    property Shape: TShapeType; read write;
+    property DragCursor: Longint; read write;
+    property DragMode: TDragMode; read write;
+    property OnDragDrop: TDragDropEvent; read write;
+    property OnDragOver: TDragOverEvent; read write;
+    property OnEndDrag: TEndDragEvent; read write;
+    property OnMouseDown: TMouseEvent; read write;
+    property OnMouseMove: TMouseMoveEvent; read write;
+    property OnMouseUp: TMouseEvent; read write;
+    property OnStartDrag: TStartDragEvent; read write;
+    property OnMouseEnter: TNotifyEvent; read write;
+    property OnMouseLeave: TNotifyEvent; read write;
+  end;
+
+  TPaintBox = class(TGraphicControl)
+    property Canvas: TCanvas; read;
+    property Color: TColor; read write;
+    property Font: TFont; read write;
+    property ParentColor: Boolean; read write;
+    property ParentFont: Boolean; read write;
+    property OnClick: TNotifyEvent; read write;
+    property OnDblClick: TNotifyEvent; read write;
+    property OnPaint: TNotifyEvent; read write;
+    property DragCursor: Longint; read write;
+    property DragMode: TDragMode; read write;
+    property PopupMenu: TPopupMenu; read write;
+    property OnDragDrop: TDragDropEvent; read write;
+    property OnDragOver: TDragOverEvent; read write;
+    property OnEndDrag: TEndDragEvent; read write;
+    property OnMouseDown: TMouseEvent; read write;
+    property OnMouseMove: TMouseMoveEvent; read write;
+    property OnMouseUp: TMouseEvent; read write;
+    property OnStartDrag: TStartDragEvent; read write;
+    property OnMouseEnter: TNotifyEvent; read write;
+    property OnMouseLeave: TNotifyEvent; read write;
+  end;
+
+  TCustomPanel = class(TCustomControl)
+  end;
+
+  TPanelBevel = (bvNone, bvLowered, bvRaised, bvSpace);
+
+  TBevelWidth = Longint;
+
+  TBorderWidth = Longint;
+
+  TSectionEvent = procedure(Sender: TObject; ASection, AWidth: Integer);
+
+  TPanel = class(TCustomPanel)
+    property Alignment: TAlignment; read write;
+    property BevelInner: TPanelBevel; read write;
+    property BevelOuter: TPanelBevel; read write;
+    property BevelWidth: TBevelWidth; read write;
+    property BorderWidth: TBorderWidth; read write;
+    property BorderStyle: TBorderStyle; read write;
+    property Caption: String; read write;
+    property Color: TColor; read write;
+    property Font: TFont; read write;
+    property ParentColor: Boolean; read write;
+    property ParentFont: Boolean; read write;
+    property OnClick: TNotifyEvent; read write;
+    property OnDblClick: TNotifyEvent; read write;
+    property OnEnter: TNotifyEvent; read write;
+    property OnExit: TNotifyEvent; read write;
+    property DragCursor: Longint; read write;
+    property DragMode: TDragMode; read write;
+    property Ctl3D: Boolean; read write;
+    property Locked: Boolean; read write;
+    property ParentCtl3D: Boolean; read write;
+    property PopupMenu: TPopupMenu; read write;
+    property OnDragDrop: TDragDropEvent; read write;
+    property OnDragOver: TDragOverEvent; read write;
+    property OnEndDrag: TEndDragEvent; read write;
+    property OnMouseDown: TMouseEvent; read write;
+    property OnMouseMove: TMouseMoveEvent; read write;
+    property OnMouseUp: TMouseEvent; read write;
+    property OnResize: TNotifyEvent; read write;
+    property OnStartDrag: TStartDragEvent; read write;
+    property ParentBackground: Boolean; read write;
+    property OnMouseEnter: TNotifyEvent; read write;
+    property OnMouseLeave: TNotifyEvent; read write;
+  end;
+
+  THeaderSectionStyle = (hsText, hsOwnerDraw);
+
+  THeaderSection = class(TCollectionItem)
+    property Left: Integer; read;
+    property Right: Integer; read;
+    property Alignment: TAlignment; read write;
+    property AllowClick: Boolean; read write;
+    property MaxWidth: Integer; read write;
+    property MinWidth: Integer; read write;
+    property Style: THeaderSectionStyle; read write;
+    property Text: string; read write;
+    property Width: Integer; read write;
+  end;
+
+  THeaderSections = class(TCollection)
+    constructor Create(HeaderControl: THeaderControl);
+    function Add: THeaderSection;
+    Property Items[Index: Integer]: THeaderSection; read write;
+  end;
+
+  TSectionTrackState = (tsTrackBegin, tsTrackMove, tsTrackEnd);
+
+  TDrawSectionEvent = procedure(HeaderControl: THeaderControl; Section: THeaderSection; const Rect: TRect; Pressed: Boolean);
+
+  TSectionNotifyEvent = procedure(HeaderControl: THeaderControl; Section: THeaderSection);
+
+  TSectionTrackEvent = procedure(HeaderControl: THeaderControl; Section: THeaderSection; Width: Integer; State: TSectionTrackState);
+
+  THeaderControl = class(TWinControl)
+    property Canvas: TCanvas; read;
+    property Sections: THeaderSections; read write;
+    property OnDrawSection: TDrawSectionEvent; read write;
+    property OnResize: TNotifyEvent; read write;
+    property OnSectionClick: TSectionNotifyEvent; read write;
+    property OnSectionResize: TSectionNotifyEvent; read write;
+    property OnSectionTrack: TSectionTrackEvent; read write;
+  end;
+
+  HTreeItem = Longword;
+
+  TTVCompare = function(lParam1, lParam2, lParamSort: Longint): Integer;
+
+  TNodeAttachMode = (naAdd, naAddFirst, naAddChild, naAddChildFirst, naInsert);
+
+  THitTest = (htAbove, htBelow, htNowhere, htOnItem, htOnButton, htOnIcon, htOnIndent, 
+       htOnLabel, htOnRight, htOnStateIcon, htToLeft, htToRight);
+
+  THitTests = set of THitTest;
+
+  TSortType = (stNone, stData, stText, stBoth);    
+
+  TResType = (rtBitmap, rtCursor, rtIcon);
+
+  HImageList = THandle;
+
+  TDrawingStyle = (dsFocus, dsSelected, dsNormal, dsTransparent);
+
+  TImageType = (itImage, itMask);
+
+  TTreeNode = class(TPersistent)
+    constructor Create(AOwner: TTreeNodes);
+    function AlphaSort: Boolean;
+    procedure Collapse(Recurse: Boolean);
+    function CustomSort(SortProc: TTVCompare; Data: Longint): Boolean;
+    procedure Delete;
+    procedure DeleteChildren;
+    function DisplayRect(TextOnly: Boolean): TRect;
+    function EditText: Boolean;
+    procedure EndEdit(Cancel: Boolean);
+    procedure Expand(Recurse: Boolean);
+    function GetFirstChild: TTreeNode;
+    function GetHandle: HWND;
+    function GetLastChild: TTreeNode;
+    function GetNext: TTreeNode;
+    function GetNextChild(Value: TTreeNode): TTreeNode;
+    function GetNextSibling: TTreeNode;
+    function GetNextVisible: TTreeNode;
+    function GetPrev: TTreeNode;
+    function GetPrevChild(Value: TTreeNode): TTreeNode;
+    function GetPrevSibling: TTreeNode;
+    function GetPrevVisible: TTreeNode;
+    function HasAsParent(Value: TTreeNode): Boolean;
+    function IndexOf(Value: TTreeNode): Integer;
+    procedure MakeVisible;
+    procedure MoveTo(Destination: TTreeNode; Mode: TNodeAttachMode);
+    property AbsoluteIndex: Integer; read;
+    property Count: Integer; read;
+    property Cut: Boolean; read write;
+    property Data: TObject; read write;
+    property Deleting: Boolean; read;
+    property Focused: Boolean; read write;
+    property DropTarget: Boolean; read write;
+    property Selected: Boolean; read write;
+    property Expanded: Boolean; read write;
+    property Handle: HWND; read;
+    property HasChildren: Boolean; read write;
+    property ImageIndex: Integer; read write;
+    property Index: Integer; read;
+    property IsVisible: Boolean; read;
+    property Item[Index: Integer]: TTreeNode; read write;
+    property ItemId: HTreeItem; read;
+    property Level: Integer; read;
+    property OverlayIndex: Integer; read write;
+    property Parent: TTreeNode; read;
+    property SelectedIndex: Integer; read write;
+    property StateIndex: Integer; read write;
+    property Text: String; read write;
+    property Owner: TTreeNodes; read;
+    property TreeView: TCustomTreeView; read;
+  end;
+
+  TTreeNodes = class(TPersistent)
+    constructor Create(AOwner: TCustomTreeView);
+    function AddChildFirst(Node: TTreeNode; const S: String): TTreeNode;
+    function AddChild(Node: TTreeNode; const S: String): TTreeNode;
+    function AddChildObjectFirst(Node: TTreeNode; const S: String; Obj: TObject): TTreeNode;
+    function AddChildObject(Node: TTreeNode; const S: String; Obj: TObject): TTreeNode;
+    function AddFirst(Node: TTreeNode; const S: String): TTreeNode;
+    function Add(Node: TTreeNode; const S: String): TTreeNode;
+    function AddObjectFirst(Node: TTreeNode; const S: String; Obj: TObject): TTreeNode;
+    function AddObject(Node: TTreeNode; const S: String; Obj: TObject): TTreeNode;
+    procedure BeginUpdate;
+    procedure Clear;
+    procedure Delete(Node: TTreeNode);
+    procedure EndUpdate;
+    function GetFirstNode: TTreeNode;
+    function GetNode(ItemId: HTreeItem): TTreeNode;
+    function Insert(Node: TTreeNode; const S: String): TTreeNode;
+    function InsertObject(Node: TTreeNode; const S: String; Obj: TObject): TTreeNode;
+    property Count: Integer; read;
+    property Handle: HWND; read;
+    property Item[Index: Integer]: TTreeNode; read;
+    property Owner: TCustomTreeView; read;
+  end;
+
+  TTVChangingEvent = procedure(Sender: TObject; Node: TTreeNode; var AllowChange: Boolean);
+
+  TTVChangedEvent = procedure(Sender: TObject; Node: TTreeNode);
+
+  TTVEditingEven = procedure(Sender: TObject; Node: TTreeNode; var AllowEdit: Boolean);
+
+  TTVEditedEvent = procedure(Sender: TObject; Node: TTreeNode; var S: String);
+
+  TTVExpandingEvent = procedure(Sender: TObject; Node: TTreeNode; var AllowExpansion: Boolean);
+
+  TTVCollapsingEvent = procedure(Sender: TObject; Node: TTreeNode; var AllowCollapse: Boolean);
+
+  TTVExpandedEvent = procedure(Sender: TObject; Node: TTreeNode);
+
+  TTVCompareEvent = procedure(Sender: TObject; Node1, Node2: TTreeNode; Data: Integer; var Compare: Integer);
+
+  TCustomImageList = class(TComponent)
+    Constructor CreateSize(AWidth, AHeight: Integer);
+    function Add(Image, Mask: TBitmap): Integer;
+    function AddIcon(Image: TIcon): Integer;
+    procedure AddImages(Value: TCustomImageList);
+    function AddMasked(Image: TBitmap; MaskColor: TColor): Integer;
+    procedure Clear;
+    procedure Delete(Index: Integer);
+    procedure Draw(Canvas: TCanvas; X, Y, Index: Integer);
+    procedure DrawOverlay(Canvas: TCanvas; X, Y: Integer; ImageIndex: Integer; Overlay: Byte);
+    function FileLoad(ResType: TResType; Name: String; MaskColor: TColor): Boolean;
+    procedure GetBitmap(Index: Integer; Image: TBitmap);
+    function GetHotSpot: TPoint;
+    procedure GetIcon(Index: Integer; Image: TIcon);
+    function GetImageBitmap: HBITMAP;
+    function GetMaskBitmap: HBITMAP;
+    function GetResource(ResType: TResType; Name: String; Width: Integer; LoadFlags: TLoadResources; MaskColor: TColor): Boolean;
+    function HandleAllocated: Boolean;
+    procedure Insert(Index: Integer; Image, Mask: TBitmap);
+    procedure InsertIcon(Index: Integer; Image: TIcon);
+    procedure InsertMasked(Index: Integer; Image: TBitmap; MaskColor: TColor);
+    procedure Move(CurIndex, NewIndex: Integer);
+    function Overlay(ImageIndex: Integer; Overlay: TOverlay): Boolean;
+    function ResourceLoad(ResType: TResType; Name: String; MaskColor: TColor): Boolean;
+    procedure Replace(Index: Integer; Image, Mask: TBitmap);
+    procedure ReplaceIcon(Index: Integer; Image: TIcon);
+    procedure ReplaceMasked(Index: Integer; NewImage: TBitmap; MaskColor: TColor);
+    property Count: Integer; read;
+    property Handle: HImageList; read write;
+  end;
+
+  TImageList = class(TCustomImageList)
+    property BlendColor: TColor; read write;
+    property BkColor: TColor; read write;
+    property AllocBy: Integer; read write;
+    property DrawingStyle: TDrawingStyle; read write;
+    property Height: Integer; read write;
+    property ImageType: TImageType; read write;
+    property Masked: Boolean; read write;
+    property OnChange: TNotifyEvent; read write;
+    property ShareImages: Boolean; read write;
+    property Width: Integer; read write;
+  end;
+
+  TCustomTreeView = class(TWinControl)
+    function AlphaSort: Boolean;
+    function CustomSort(SortProc: TTVCompare; Data: Longint): Boolean;
+    procedure FullCollapse;
+    procedure FullExpand;
+    function GetHitTestInfoAt(X, Y: Integer): THitTests;
+    function GetNodeAt(X, Y: Integer): TTreeNode;
+    function IsEditing: Boolean;
+    procedure LoadFromFile(const FileName: String);
+    procedure LoadFromStream(Stream: TStream);
+    procedure SaveToFile(const FileName: String);
+    procedure SaveToStream(Stream: TStream);
+    property DropTarget: TTreeNode; read write;
+    property Selected: TTreeNode; read write;
+    property TopItem: TTreeNode; read write;
+  end;
+
+  TTreeView = class(TCustomTreeView)
+    property ShowButtons: Boolean; read write;
+    property BorderStyle: TBorderStyle; read write;
+    property DragCursor: TCursor; read write;
+    property ShowLines: Boolean; read write;
+    property ShowRoot: Boolean; read write;
+    property ReadOnly: Boolean; read write;
+    property DragMode: TDragMode; read write;
+    property HideSelection: Boolean; read write;
+    property Indent: Integer; read write;
+    property Items: TTreeNodes; read write;
+    property OnEditing: TTVEditingEvent; read write;
+    property OnEdited: TTVEditedEvent; read write;
+    property OnExpanding: TTVExpandingEvent; read write;
+    property OnExpanded: TTVExpandedEvent; read write;
+    property OnCollapsing: TTVCollapsingEvent; read write;
+    property OnCompare: TTVCompareEvent; read write;
+    property OnCollapsed: TTVExpandedEvent; read write;
+    property OnChanging: TTVChangingEvent; read write;
+    property OnChange: TTVChangedEvent; read write;
+    property OnDeletion: TTVExpandedEvent; read write;
+    property OnGetImageIndex: TTVExpandedEvent; read write;
+    property OnGetSelectedIndex: TTVExpandedEvent; read write;
+    property Font: TFont; read write;
+    property Color: TColor; read write;
+    property ParentColor: Boolean; read write;
+    property ParentCtl3D: Boolean; read write;
+    property Ctl3D: Boolean; read write;
+    property SortType: TSortType; read write;
+    property OnClick: TNotifyEvent; read write;
+    property OnEnter: TNotifyEvent; read write;
+    property OnExit: TNotifyEvent; read write;
+    property OnDragDrop: TDragDropEvent; read write;
+    property OnDragOver: TDragOverEvent; read write;
+    property OnStartDrag: TStartDragEvent; read write;
+    property OnEndDrag: TEndDragEvent; read write;
+    property OnMouseDown: TMouseEvent; read write;
+    property OnMouseMove: TMouseMoveEvent; read write;
+    property OnMouseUp: TMouseEvent; read write;
+    property OnDblClick: TNotifyEvent; read write;
+    property OnKeyDown: TKeyEvent; read write;
+    property OnKeyPress: TKeyPressEvent; read write;
+    property OnKeyUp: TKeyEvent; read write;
+    property PopupMenu: TPopupMenu; read write;
+    property ParentFont: Boolean; read write;
+    property Images: TImageList; read write;
+    property StateImages: TImageList; read write;
+    property OnMouseEnter: TNotifyEvent; read write;
+    property OnMouseLeave: TNotifyEvent; read write;
+  end;
+
+  TDisplayCode = (drBounds, drIcon, drLabel, drSelectBounds);
+
+  TListItem = class(TPersistent)
+    constructor Create(AOwner: TListItems);
+    procedure CancelEdit;
+    procedure Delete;
+    function DisplayRect(Code: TDisplayCode): TRect;
+    function EditCaption: Boolean;
+    function GetPosition: TPoint;
+    procedure MakeVisible(PartialOK: Boolean);
+    procedure Update;
+    procedure SetPosition(const Value: TPoint);
+    property Caption: String; read write;
+    property Cut: Boolean; read write;
+    property Data: TObject; read write;
+    property DropTarget: Boolean; read write;
+    property Focused: Boolean; read write;
+    property Handle: HWND; read;
+    property ImageIndex: Integer; read write;
+    property Index: Integer; read;
+    property Left: Integer; read write;
+    property OverlayIndex: Integer; read write;
+    property Selected: Boolean; read write;
+    property StateIndex: Integer; read write;
+    property SubItems: TStrings; read write;
+    property Top: Integer; read write;
+    property Owner: TListItems; read;
+    property ListView: TCustomListView; read;
+  end;
+
+  TListItems = class(TPersistent)
+    constructor Create(AOwner: TCustomListView);
+    function Add: TListItem;
+    procedure BeginUpdate;
+    procedure Clear;
+    procedure Delete(Index: Integer);
+    procedure EndUpdate;
+    function IndexOf(Value: TListItem): Integer;
+    function Insert(Index: Integer): TListItem;
+    property Count: Integer; read;
+    property Handle: HWND; read;
+    property Item[Index: Integer]: TListItem; read write;
+    property Owner: TCustomListView; read;
+  end;
+
+  TListColumn = class(TCollectionItem)
+    property WidthType: Integer; read;
+    property Alignment: TAlignment; read write;
+    property Caption: String; read write;
+    property Width: Integer; read write;
+  end;
+
+  TListColumns = class(TCollection)
+    constructor Create(AOwner: TCustomListView);
+    function Add: TListColumn;
+    property Items[Index: Integer]: TListColumn; read write;
+    property Owner: TCustomListView; read;
+  end;
+
+  TIconArrangement = (iaTop, iaLeft);
+
+  TIconOptions = class(TPersistent)
+    constructor Create(AOwner: TCustomListView);
+    property Arrangement: TIconArrangement; read write;
+    property AutoArrange: Boolean; read write;
+    property WrapText: Boolean; read write;
+  end;
+
+  TListArrangement = (arAlignBottom, arAlignLeft, arAlignRight, arAlignTop, arDefault, arSnapToGrid);
+
+  TSearchDirection = (sdLeft, sdRight, sdAbove, sdBelow, sdAll);
+
+  TViewStyle = (vsIcon, vsSmallIcon, vsList, vsReport);
+
+  TItemState = (isNone, isCut, isDropHilited, isFocused, isSelected);
+
+  TItemStates = set of TItemState;
+
+  TItemChange = (ctText, ctImage, ctState);
+
+  TLVCompare = function(lParam1, lParam2, lParamSort: Integer): Integer;
+
+  TLVDeletedEvent = procedure(Sender: TObject; Item: TListItem);
+
+  TLVEditingEvent = procedure(Sender: TObject; Item: TListItem; var AllowEdit: Boolean);
+
+  TLVEditedEvent = procedure(Sender: TObject; Item: TListItem; var S: String);
+
+  TLVChangeEvent = procedure(Sender: TObject; Item: TListItem; Change: TItemChange);
+
+  TLVChangingEvent = procedure(Sender: TObject; Item: TListItem; Change: TItemChange; var AllowChange: Boolean);
+
+  TLVColumnClickEvent = procedure(Sender: TObject; Column: TListColumn);
+
+  TLVCompareEvent = procedure(Sender: TObject; Item1, Item2: TListItem; Data: Integer; var Compare: Integer);
+
+  TCustomListView = class(TWinControl)
+    function AlphaSort: Boolean;
+    procedure Arrange(Code: TListArrangement);
+    function FindCaption(StartIndex: Integer; Value: String; Partial, Inclusive, Wrap: Boolean): TListItem;
+    function FindData(StartIndex: Integer; Value: TObject; Inclusive, Wrap: Boolean): TListItem;
+    function GetItemAt(X, Y: Integer): TListItem;
+    function GetNearestItem(Point: TPoint; Direction: TSearchDirection): TListItem;
+    function GetNextItem(StartItem: TListItem; Direction: TSearchDirection; States: TItemStates): TListItem;
+    function GetSearchString: String;
+    function IsEditing: Boolean;
+    procedure Scroll(DX, DY: Integer);
+    property Column[Index: Integer]: TListColumn; read;
+    property DropTarget: TListItem; read write;
+    property ItemFocused: TListItem; read write;
+    property SelCount: Integer; read;
+    property Selected: TListItem; read write;
+    function CustomSort(SortProc: TLVCompare; lParam: Longint): Boolean;
+    function StringWidth(S: String): Integer;
+    procedure UpdateItems(FirstIndex, LastIndex: Integer);
+    property TopItem: TListItem; read;
+    property ViewOrigin: TPoint; read;
+    property VisibleRowCount: Integer; read;
+    property BoundingRect: TRect; read;
+  end;
+
+  TListView = class(TCustomListView)
+    property BorderStyle: TBorderStyle; read write;
+    property Color: TColor; read write;
+    property ColumnClick: Boolean; read write;
+    property OnClick: TNotifyEvent; read write;
+    property OnDblClick: TNotifyEvent; read write;
+    property Columns: TListColumns; read write;
+    property Ctl3D: Boolean; read write;
+    property DragMode: TDragMode; read write;
+    property ReadOnly: Boolean; read write;
+    property Font: TFont; read write;
+    property HideSelection: Boolean; read write;
+    property IconOptions: TIconOptions; read write;
+    property Items: TListItems; read write;
+    property AllocBy: Integer; read write;
+    property MultiSelect: Boolean; read write;
+    property OnChange: TLVChangeEvent; read write;
+    property OnChanging: TLVChangingEvent; read write;
+    property OnColumnClick: TLVColumnClickEvent; read write;
+    property OnCompare: TLVCompareEvent; read write;
+    property OnDeletion: TLVDeletedEvent; read write;
+    property OnEdited: TLVEditedEvent; read write;
+    property OnEditing: TLVEditingEvent; read write;
+    property OnEnter: TNotifyEvent; read write;
+    property OnExit: TNotifyEvent; read write;
+    property OnInsert: TLVDeletedEvent; read write;
+    property OnDragDrop: TDragDropEvent; read write;
+    property OnDragOver: TDragOverEvent; read write;
+    property DragCursor: TCursor; read write;
+    property OnStartDrag: TStartDragEvent; read write;
+    property OnEndDrag: TEndDragEvent; read write;
+    property OnMouseDown: TMouseEvent; read write;
+    property OnMouseMove: TMouseMoveEvent; read write;
+    property OnMouseUp: TMouseEvent; read write;
+    property PopupMenu: TPopupMenu; read write;
+    property ShowColumnHeaders: Boolean; read write;
+    property SortType: TSortType; read write;
+    property ViewStyle: TViewStyle; read write;
+    property OnKeyDown: TKeyEvent; read write;
+    property OnKeyPress: TKeyPressEvent; read write;
+    property OnKeyUp: TKeyEvent; read write;
+    property LargeImages: TImageList; read write;
+    property SmallImages: TImageList; read write;
+    property StateImages: TImageList; read write;
+    property OnMouseEnter: TNotifyEvent; read write;
+    property OnMouseLeave: TNotifyEvent; read write;
+  end;
+
+  TStatusPanelStyle = (psText, psOwnerDraw);
+
+  TStatusPanelBevel = (pbNone, pbLowered, pbRaised);
+
+  TStatusPanel = class(TCollectionItem)
+    property Alignment: TAlignment; read write;
+    property Bevel: TStatusPanelBevel; read write;
+    property Style: TStatusPanelStyle; read write;
+    property Text: string; read write;
+    property Width: Integer; read write;
+  end;
+
+  TStatusPanels = class(TCollection)
+    constructor Create(StatusBar: TStatusBar);
+    function Add: TStatusPanel;
+    property Items[Index: Integer]: TStatusPanel; read write;
+  end;
+
+  TDrawPanelEvent = procedure(StatusBar: TStatusBar; Panel: TStatusPanel; const Rect: TRect);
+
+  TStatusBar = class(TWinControl)
+    property Canvas: TCanvas; read;
+    property Panels: TStatusPanels; read write;
+    property SimplePanel: Boolean; read write;
+    property SimpleText: string; read write;
+    property SizeGrip: Boolean; read write;
+    property OnDrawPanel: TDrawPanelEvent; read write;
+    property OnResize: TNotifyEvent; read write;
+    property OnMouseDown: TMouseEvent; read write;
+    property OnMouseMove: TMouseMoveEvent; read write;
+    property OnMouseUp: TMouseEvent; read write;
+    property OnDragDrop: TDragDropEvent; read write;
+    property OnDragOver: TDragOverEvent; read write;
+    property DragCursor: TCursor; read write;
+    property OnStartDrag: TStartDragEvent; read write;
+    property OnEndDrag: TEndDragEvent; read write;
+    property OnClick: TNotifyEvent; read write;
+    property OnDblClick: TNotifyEvent; read write;
+    property Font: TFont; read write;
+    property Color: TColor; read write;
+    property ParentColor: Boolean; read write;
+    property ParentFont: Boolean; read write;
+    property PopupMenu: TPopupMenu; read write;
+    property DragMode: TDragMode; read write;
+    property ThemeBackground: Boolean; read write;
+    property OnMouseEnter: TNotifyEvent; read write;
+    property OnMouseLeave: TNotifyEvent; read write;
+  end;
+
+  TNewStaticText = class(TWinControl)
+    function AdjustHeight: Integer;
+    property AutoSize: Boolean; read write;
+    property Caption: String; read write;
+    property Color: TColor; read write;
+    property FocusControl: TWinControl; read write;
+    property Font: TFont; read write;
+    property ParentColor: Boolean; read write;
+    property ParentFont: Boolean; read write;
+    property ShowAccelChar: Boolean; read write;
+    property WordWrap: Boolean; read write;
+    property OnClick: TNotifyEvent; read write;
+    property OnDblClick: TNotifyEvent; read write;
+    property DragCursor: Longint; read write;
+    property DragMode: TDragMode; read write;
+    property PopupMenu: TPopupMenu; read write;
+    property OnDragDrop: TDragDropEvent; read write;
+    property OnDragOver: TDragOverEvent; read write;
+    property OnEndDrag: TEndDragEvent; read write;
+    property OnMouseDown: TMouseEvent; read write;
+    property OnMouseMove: TMouseMoveEvent; read write;
+    property OnMouseUp: TMouseEvent; read write;
+    property OnStartDrag: TStartDragEvent; read write;
+    property OnMouseEnter: TNotifyEvent; read write;
+    property OnMouseLeave: TNotifyEvent; read write;
+  end;
+
+  TCheckItemOperation = (coUncheck, coCheck, coCheckWithChildren);
+
+  TItemArea = (iaOther, iaButton, iaCheckmark, iaItem, iaSubItem);
+  TItemMouseMoveEvent = procedure(Sender: TObject; X, Y: Integer; Index: Integer; Area: TItemArea);
+
+  TNewCheckListBox = class(TCustomListBox)
+    function AddCheckBox(const ACaption, ASubItem: String; ALevel: Byte; AChecked, AEnabled, AHasInternalChildren, ACheckWhenParentChecked: Boolean; AObject: TObject): Integer;
+    function AddGroup(ACaption, ASubItem: String; ALevel: Byte; AObject: TObject): Integer;
+    function AddRadioButton(const ACaption, ASubItem: String; ALevel: Byte; AChecked, AEnabled: Boolean; AObject: TObject): Integer;
+    function AddCheckBoxEx(const ACaption, ASubItem: String; ALevel: Byte; AChecked, AEnabled, AHasInternalChildren, ACheckWhenParentChecked: Boolean; AObject: TObject; AExpanded: Boolean): Integer;
+    function AddGroupEx(ACaption, ASubItem: String; ALevel: Byte; AObject: TObject; AExpanded: Boolean): Integer;
+    function AddRadioButtonEx(const ACaption, ASubItem: String; ALevel: Byte; AChecked, AEnabled: Boolean; AObject: TObject; AExpanded: Boolean): Integer;
+    procedure LoadBtnBmpFromBitmap(Bmp: TBitmap);
+    procedure LoadBtnBmpFromFile(FileName: String);
+    procedure LoadBGBmpFromBitmap(Bmp: TBitmap; OffsetX, OffsetY: Integer);
+    procedure LoadBGBmpFromFile(FileName: String; OffsetX, OffsetY: Integer);
+    property SubItemFontStyle[Index: Integer]: TFontStyles; read write;
+    property ItemFontStyle[Index: Integer]: TFontStyles; read write;
+    property TreeViewStyle: Boolean; read write;
+    property Showroot: Boolean; read write;
+    property ItemCount: Integer; read;
+    property ItemHeightFixed: Boolean; read write;
+    property OnItemMouseMove: TItemMouseMoveEvent; read write;
+    property AbsItemIndex: Integer; read;
+    property ItemExpanded[Index: Integer]: Boolean; read write;
+    property HideSelection: Boolean; read write;
+    function CheckItem(const Index: Integer; const AOperation: TCheckItemOperation): Boolean;
+    property Checked[Index: Integer]: Boolean; read write;
+    property State[Index: Integer]: TCheckBoxState; read;
+    property ItemCaption[Index: Integer]: String; read write;
+    property ItemEnabled[Index: Integer]: Boolean; read write;
+    property ItemLevel[Index: Integer]: Byte; read;
+    property ItemObject[Index: Integer]: TObject; read write;
+    property ItemSubItem[Index: Integer]: String; read write;
+    property AllowGrayed: Boolean; read write;
+    property Flat: Boolean; read write;
+    property MinItemHeight: Integer; read write;
+    property Offset: Integer; read write;
+    property OnClickCheck: TNotifyEvent; read write;
+    property BorderStyle: TBorderStyle; read write;
+    property Color: TColor; read write;
+    property Font: TFont; read write;
+    property ParentColor: Boolean; read write;
+    property ParentFont: Boolean; read write;
+    property Sorted: Boolean; read write;
+    property OnClick: TNotifyEvent; read write;
+    property OnDblClick: TNotifyEvent; read write;
+    property OnKeyDown: TKeyEvent; read write;
+    property OnKeyPress: TKeyPressEvent; read write;
+    property OnKeyUp: TKeyEvent; read write;
+    property ShowLines: Boolean; read write;
+    property WantTabs: Boolean; read write;
+    property OnEnter: TNotifyEvent; read write;
+    property OnExit: TNotifyEvent; read write;
+    property Ctl3D: Boolean; read write;
+    property DragCursor: Longint; read write;
+    property DragMode: TDragMode; read write;
+    property ParentCtl3D: Boolean; read write;
+    property PopupMenu: TPopupMenu; read write;
+    property OnDragDrop: TDragDropEvent; read write;
+    property OnDragOver: TDragOverEvent; read write;
+    property OnEndDrag: TEndDragEvent; read write;
+    property OnMouseDown: TMouseEvent; read write;
+    property OnMouseMove: TMouseMoveEvent; read write;
+    property OnMouseUp: TMouseEvent; read write;
+    property OnStartDrag: TStartDragEvent; read write;
+    property OnMouseEnter: TNotifyEvent; read write;
+    property OnMouseLeave: TNotifyEvent; read write;
+  end;
+
+  TNewProgressBarState = (npbsNormal, npbsError, npbsPaused);
+
+  TNewProgressBarStyle = (npbstNormal, npbstMarquee);
+
+  TNewProgressBar = class(TWinControl)
+    property Min: Longint; read write;
+    property Max: Longint; read write;
+    property Position: Longint; read write;
+    property State: TNewProgressBarState; read write;
+    property Style: TNewProgressBarStyle; read write;
+  end;
+
+  TRichEditViewer = class(TMemo)
+    property RTFText: AnsiString; write;
+    property UseRichEdit: Boolean; read write;
+    property ThemeBorder: Boolean; read write;
+  end;
+
+  TPasswordEdit = class(TCustomEdit)
+    property AutoSelect: Boolean; read write;
+    property AutoSize: Boolean; read write;
+    property BorderStyle: TBorderStyle; read write;
+    property Color: TColor; read write;
+    property Font: TFont; read write;
+    property HideSelection: Boolean; read write;
+    property MaxLength: Integer; read write;
+    property ParentColor: Boolean; read write;
+    property ParentFont: Boolean; read write;
+    property Password: Boolean; read write;
+    property ReadOnly: Boolean; read write;
+    property Text: String; read write;
+    property OnChange: TNotifyEvent; read write;
+    property OnClick: TNotifyEvent; read write;
+    property OnDblClick: TNotifyEvent; read write;
+    property OnKeyDown: TKeyEvent; read write;
+    property OnKeyPress: TKeyPressEvent; read write;
+    property OnKeyUp: TKeyEvent; read write;
+    property OnEnter: TNotifyEvent; read write;
+    property OnExit: TNotifyEvent; read write;
+    property CharCase: TEditCharCase; read write;
+    property Ctl3D: Boolean; read write;
+    property DragCursor: Longint; read write;
+    property DragMode: TDragMode; read write;
+    property OEMConvert: Boolean; read write;
+    property ParentCtl3D: Boolean; read write;
+    property PopupMenu: TPopupMenu; read write;
+    property OnDragDrop: TDragDropEvent; read write;
+    property OnDragOver: TDragOverEvent; read write;
+    property OnEndDrag: TEndDragEvent; read write;
+    property OnMouseDown: TMouseEvent; read write;
+    property OnMouseMove: TMouseMoveEvent; read write;
+    property OnMouseUp: TMouseEvent; read write;
+    property OnStartDrag: TStartDragEvent; read write;
+    property OnMouseEnter: TNotifyEvent; read write;
+    property OnMouseLeave: TNotifyEvent; read write;
+  end;
+
+  TCustomFolderTreeView = class(TWinControl)
+    procedure ChangeDirectory(const Value: String; const CreateNewItems: Boolean);
+    procedure CreateNewDirectory(const ADefaultName: String);
+    property Directory: String; read write;
+    property ShowAllFolders: Boolean; read write;
+  end;
+
+  TFolderRenameEvent = procedure(Sender: TCustomFolderTreeView; var NewName: String; var Accept: Boolean);
+
+  TFolderTreeView = class(TCustomFolderTreeView)
+    property OnChange: TNotifyEvent; read write;
+    property OnRename: TFolderRenameEvent; read write;
+  end;
+
+  TStartMenuFolderTreeView = class(TCustomFolderTreeView)
+    procedure SetPaths(const AUserPrograms, ACommonPrograms, AUserStartup, ACommonStartup: String);
+    property OnChange: TNotifyEvent; read write;
+    property OnRename: TFolderRenameEvent; read write;
+  end;
+
+  TBitmapImage = class(TGraphicControl)
+    property AutoSize: Boolean; read write;
+    property BackColor: TColor; read write;
+    property Center: Boolean; read write;
+    property Bitmap: TBitmap; read write;
+    property ReplaceColor: TColor; read write;
+    property ReplaceWithColor: TColor; read write;
+    property Stretch: Boolean; read write;
+    property DragCursor: Longint; read write;
+    property DragMode: TDragMode; read write;
+    property PopupMenu: TPopupMenu; read write;
+    property OnDragDrop: TDragDropEvent; read write;
+    property OnDragOver: TDragOverEvent; read write;
+    property OnEndDrag: TEndDragEvent; read write;
+    property OnClick: TNotifyEvent; read write;
+    property OnDblClick: TNotifyEvent; read write;
+    property OnMouseDown: TMouseEvent; read write;
+    property OnMouseMove: TMouseMoveEvent; read write;
+    property OnMouseUp: TMouseEvent; read write;
+    property OnStartDrag: TStartDragEvent; read write;
+    property OnMouseEnter: TNotifyEvent; read write;
+    property OnMouseLeave: TNotifyEvent; read write;
+  end;
+
+  TNewIconImage = class(TGraphicControl)
+    property AutoSize: Boolean; read write;
+    property BackColor: TColor; read write;
+    property Center: Boolean; read write;
+    property Icon: TNewIcon; read write;
+    property DragCursor: Longint; read write;
+    property DragMode: TDragMode; read write;
+    property PopupMenu: TPopupMenu; read write;
+    property OnDragDrop: TDragDropEvent; read write;
+    property OnDragOver: TDragOverEvent; read write;
+    property OnEndDrag: TEndDragEvent; read write;
+    property OnClick: TNotifyEvent; read write;
+    property OnDblClick: TNotifyEvent; read write;
+    property OnMouseDown: TMouseEvent; read write;
+    property OnMouseMove: TMouseMoveEvent; read write;
+    property OnMouseUp: TMouseEvent; read write;
+    property OnStartDrag: TStartDragEvent; read write;
+    property OnMouseEnter: TNotifyEvent; read write;
+    property OnMouseLeave: TNotifyEvent; read write;
+  end;
+
+  TNewSpeedButtonLayout = (blGlyphLeft, blGlyphRight, blGlyphTop, blGlyphBottom);
+
+  TNewSpeedButtonStyle = (nsbButton, nsbDropDown);
+
+  TNewSpeedButton = class(TGraphicControl)
+    property AllowAllUp: Boolean; read write;
+    property GroupIndex: Integer; read write;
+    property Down: Boolean; read write;
+    property Caption: String; read write;
+    property Enabled: Boolean; read write;
+    property Flat: Boolean; read write;
+    property Font: TFont; read write;
+    property ParentFont: Boolean; read write;
+    property FocusControl: TWinControl; read write;
+    property Glyph: TBitmap; read write;
+    property Layout: TNewSpeedButtonLayout; read write;
+    property Margin: Integer; read write;
+    property NumGlyphs: Integer; read write;
+    property ParentShowHint: Boolean; read write;
+    property Style: TNewSpeedButtonStyle; read write;
+    property ThemeEnabled: Boolean; read write;
+    property Spacing: Integer; read write;
+    property Transparent: Boolean; read write;
+    property DragCursor: Longint; read write;
+    property DragMode: TDragMode; read write;
+    property PopupMenu: TPopupMenu; read write;
+    property DropdownMenu: TPopupMenu; read write;
+    property OnDragDrop: TDragDropEvent; read write;
+    property OnDragOver: TDragOverEvent; read write;
+    property OnEndDrag: TEndDragEvent; read write;
+    property OnStartDrag: TStartDragEvent; read write;
+    property OnClick: TNotifyEvent; read write;
+    property OnDblClick: TNotifyEvent; read write;
+    property OnMouseDown: TMouseEvent; read write;
+    property OnMouseMove: TMouseMoveEvent; read write;
+    property OnMouseUp: TMouseEvent; read write;
+    property OnMouseEnter: TNotifyEvent; read write;
+    property OnMouseLeave: TNotifyEvent; read write;
+  end;
+
+  TNewNotebookPage = class(TCustomControl)
+    property Color: TColor; read write;
+    property Notebook: TNewNotebook; read write;
+    property PageIndex: Integer; read write;
+  end;
+
+  TNewNotebook = class(TWinControl)
+    function FindNextPage(CurPage: TNewNotebookPage; GoForward: Boolean): TNewNotebookPage;
+    property PageCount: Integer; read write;
+    property Pages[Index: Integer]: TNewNotebookPage; read;
+    property ActivePage: TNewNotebookPage; read write;
+  end;
+
+  TWizardPage = class(TComponent)
+    property ID: Integer; read;
+    property Caption: String; read write;
+    property Description: String; read write;
+    property Surface: TNewNotebookPage; read write;
+    property SurfaceHeight: Integer; read write;
+    property SurfaceWidth: Integer; read write;
+    property OnActivate: TWizardPageNotifyEvent; read write;
+    property OnBackButtonClick: TWizardPageButtonEvent; read write;
+    property OnCancelButtonClick: TWizardPageCancelEvent; read write;
+    property OnNextButtonClick: TWizardPageButtonEvent; read write;
+    property OnShouldSkipPage: TWizardPageShouldSkipEvent; read write;
+  end;
+
+  TWizardPageNotifyEvent = procedure(Sender: TWizardPage);
+
+  TWizardPageButtonEvent = function(Sender: TWizardPage): Boolean;
+
+  TWizardPageCancelEvent = procedure(Sender: TWizardPage; var ACancel, AConfirm: Boolean);
+
+  TWizardPageShouldSkipEvent = function(Sender: TWizardPage): Boolean;
+
+  TInputQueryWizardPage = class(TWizardPage)
+    function Add(const APrompt: String; const APassword: Boolean): Integer;
+    property Edits[Index: Integer]: TPasswordEdit; read;
+    property PromptLabels[Index: Integer]: TNewStaticText; read;
+    property SubCaptionLabel: TNewStaticText; read;
+    property Values[Index: Integer]: String; read write;
+  end;
+
+  TInputOptionWizardPage = class(TWizardPage)
+    function Add(const ACaption: String): Integer;
+    function AddEx(const ACaption: String; const ALevel: Byte; const AExclusive: Boolean): Integer;
+    property CheckListBox: TNewCheckListBox; read;
+    property SelectedValueIndex: Integer; read write;
+    property SubCaptionLabel: TNewStaticText; read;
+    property Values[Index: Integer]: Boolean; read write;
+  end;
+
+  TInputDirWizardPage = class(TWizardPage)
+    function Add(const APrompt: String): Integer;
+    property Buttons[Index: Integer]: TNewButton; read;
+    property Edits[Index: Integer]: TEdit; read;
+    property PromptLabels[Index: Integer]: TNewStaticText; read;
+    property SubCaptionLabel: TNewStaticText; read;
+    property Values[Index: Integer]: String; read write;
+  end;
+
+  TInputFileWizardPage = class(TWizardPage)
+    function Add(const APrompt, AFilter, ADefaultExtension: String): Integer;
+    property Buttons[Index: Integer]: TNewButton; read;
+    property Edits[Index: Integer]: TEdit; read;
+    property PromptLabels[Index: Integer]: TNewStaticText; read;
+    property SubCaptionLabel: TNewStaticText; read;
+    property Values[Index: Integer]: String; read write;
+    property IsSaveButton[Index: Integer]: Boolean; read write;
+  end;
+
+  TOutputMsgWizardPage = class(TWizardPage)
+    property MsgLabel: TNewStaticText; read;
+  end;
+
+  TOutputMsgMemoWizardPage = class(TWizardPage)
+    property RichEditViewer: TRichEditViewer; read;
+    property SubCaptionLabel: TNewStaticText; read;
+  end;
+
+  TOutputProgressWizardPage = class(TWizardPage)
+    procedure Hide;
+    property Msg1Label: TNewStaticText; read;
+    property Msg2Label: TNewStaticText; read;
+    property ProgressBar: TNewProgressBar; read;
+    procedure SetProgress(const Position, Max: Longint);
+    procedure SetText(const Msg1, Msg2: String);
+    procedure Show;
+  end;
+
+  TUIStateForm = class(TForm)
+  end;
+
+  TSetupForm = class(TUIStateForm)
+    procedure Center;
+    procedure CenterInsideControl(const Ctl: TWinControl; const InsideClientArea: Boolean);
+    property ControlsFlipped: Boolean; read;
+    property FlipControlsOnShow: Boolean; read write;
+    property RightToLeft: Boolean; read;
+  end;
+
+  TSelectLanguageForm = class(TSetupForm)
+    property SelectLabel: TNewStaticText; read;
+    property LangCombo: TNewComboBox; read;
+    property OKButton: TNewButton; read;
+    property CancelButton: TNewButton; read;
+    property IconBitmapImage: TBitmapImage; read;
+  end;
+
+  TMainForm = class(TSetupForm)
+    procedure ShowAboutBox;
+  end;
+
+  TWizardForm = class(TSetupForm)
+    property CancelButton: TNewButton; read;
+    property NextButton: TNewButton; read;
+    property BackButton: TNewButton; read;
+    property OuterNotebook: TNewNotebook; read;
+    property InnerNotebook: TNewNotebook; read;
+    property WelcomePage: TNewNotebookPage; read;
+    property InnerPage: TNewNotebookPage; read;
+    property FinishedPage: TNewNotebookPage; read;
+    property LicensePage: TNewNotebookPage; read;
+    property PasswordPage: TNewNotebookPage; read;
+    property InfoBeforePage: TNewNotebookPage; read;
+    property UserInfoPage: TNewNotebookPage; read;
+    property SelectDirPage: TNewNotebookPage; read;
+    property SelectComponentsPage: TNewNotebookPage; read;
+    property SelectProgramGroupPage: TNewNotebookPage; read;
+    property SelectTasksPage: TNewNotebookPage; read;
+    property ReadyPage: TNewNotebookPage; read;
+    property PreparingPage: TNewNotebookPage; read;
+    property InstallingPage: TNewNotebookPage; read;
+    property InfoAfterPage: TNewNotebookPage; read;
+    property DiskSpaceLabel: TNewStaticText; read;
+    property DirEdit: TEdit; read;
+    property GroupEdit: TNewEdit; read;
+    property NoIconsCheck: TNewCheckBox; read;
+    property PasswordLabel: TNewStaticText; read;
+    property PasswordEdit: TPasswordEdit; read;
+    property PasswordEditLabel: TNewStaticText; read;
+    property ReadyMemo: TNewMemo; read;
+    property TypesCombo: TNewComboBox; read;
+    property Bevel: TBevel; read;
+    property WizardBitmapImage: TBitmapImage; read;
+    property WelcomeLabel1: TNewStaticText; read;
+    property InfoBeforeMemo: TRichEditViewer; read;
+    property InfoBeforeClickLabel: TNewStaticText; read;
+    property MainPanel: TPanel; read;
+    property Bevel1: TBevel; read;
+    property PageNameLabel: TNewStaticText; read;
+    property PageDescriptionLabel: TNewStaticText; read;
+    property WizardSmallBitmapImage: TBitmapImage; read;
+    property ReadyLabel: TNewStaticText; read;
+    property FinishedLabel: TNewStaticText; read;
+    property YesRadio: TNewRadioButton; read;
+    property NoRadio: TNewRadioButton; read;
+    property WizardBitmapImage2: TBitmapImage; read;
+    property WelcomeLabel2: TNewStaticText; read;
+    property LicenseLabel1: TNewStaticText; read;
+    property LicenseMemo: TRichEditViewer; read;
+    property InfoAfterMemo: TRichEditViewer; read;
+    property InfoAfterClickLabel: TNewStaticText; read;
+    property ComponentsList: TNewCheckListBox; read;
+    property ComponentsDiskSpaceLabel: TNewStaticText; read;
+    property BeveledLabel: TNewStaticText; read;
+    property StatusLabel: TNewStaticText; read;
+    property FilenameLabel: TNewStaticText; read;
+    property ProgressGauge: TNewProgressBar; read;
+    property SelectDirLabel: TNewStaticText; read;
+    property SelectStartMenuFolderLabel: TNewStaticText; read;
+    property SelectComponentsLabel: TNewStaticText; read;
+    property SelectTasksLabel: TNewStaticText; read;
+    property LicenseAcceptedRadio: TNewRadioButton; read;
+    property LicenseNotAcceptedRadio: TNewRadioButton; read;
+    property UserInfoNameLabel: TNewStaticText; read;
+    property UserInfoNameEdit: TNewEdit; read;
+    property UserInfoOrgLabel: TNewStaticText; read;
+    property UserInfoOrgEdit: TNewEdit; read;
+    property PreparingErrorBitmapImage: TBitmapImage; read;
+    property PreparingLabel: TNewStaticText; read;
+    property FinishedHeadingLabel: TNewStaticText; read;
+    property UserInfoSerialLabel: TNewStaticText; read;
+    property UserInfoSerialEdit: TNewEdit; read;
+    property TasksList: TNewCheckListBox; read;
+    property RunList: TNewCheckListBox; read;
+    property DirBrowseButton: TNewButton; read;
+    property GroupBrowseButton: TNewButton; read;
+    property SelectDirBitmapImage: TBitmapImage; read;
+    property SelectGroupBitmapImage: TBitmapImage; read;
+    property SelectDirBrowseLabel: TNewStaticText; read;
+    property SelectStartMenuFolderBrowseLabel: TNewStaticText; read;
+    property PreparingYesRadio: TNewRadioButton; read;
+    property PreparingNoRadio: TNewRadioButton; read;
+    property PreparingMemo: TNewMemo; read;
+    property CurPageID: Integer; read;
+    function AdjustLabelHeight(ALabel: TNewStaticText): Integer;
+    procedure IncTopDecHeight(AControl: TControl; Amount: Integer);
+    property PrevAppDir: String; read;
+  end;
+
+  TUninstallProgressForm = class(TSetupForm)
+    property OuterNotebook: TNewNotebook; read;
+    property InnerPage: TNewNotebookPage; read;
+    property InnerNotebook: TNewNotebook; read;
+    property InstallingPage: TNewNotebookPage; read;
+    property MainPanel: TPanel; read;
+    property PageNameLabel: TNewStaticText; read;
+    property PageDescriptionLabel: TNewStaticText; read;
+    property WizardSmallBitmapImage: TBitmapImage; read;
+    property Bevel1: TBevel; read;
+    property StatusLabel: TNewStaticText; read;
+    property ProgressBar: TNewProgressBar; read;
+    property BeveledLabel: TNewStaticText; read;
+    property Bevel: TBevel; read;
+    property CancelButton: TNewButton; read;
+  end;
+
+  TArrayOfString = array of String;
+
+  TArrayOfChar = array of Char;
+
+  TArrayOfBoolean = array of Boolean;
+
+  TArrayOfInteger = array of Integer;
+
+  DWORD = LongWord;
+
+  UINT = LongWord;
+
+  BOOL = LongBool;
+  
+  DWORD_PTR = LongWord;
+
+  UINT_PTR = LongWord;
+
+  INT_PTR = Longint;
+
+  TMsgBoxType = (mbInformation, mbConfirmation, mbError, mbCriticalError);
+
+  TShellFolderID = (sfDesktop, sfStartMenu, sfPrograms, sfStartup, sfSendTo,
+       sfFonts, sfAppData, sfDocs, sfTemplates, sfFavorites, sfLocalAppData);
+
+  TSetupMessageID = (
+    msgAboutSetupMenuItem,
+    msgAboutSetupMessage,
+    msgAboutSetupNote,
+    msgAboutSetupTitle,
+    msgAdminPrivilegesRequired,
+    msgBadDirName32,
+    msgBadGroupName,
+    msgBeveledLabel,
+    msgBrowseDialogLabel,
+    msgBrowseDialogTitle,
+    msgButtonBack,
+    msgButtonBrowse,
+    msgButtonCancel,
+    msgButtonFinish,
+    msgButtonInstall,
+    msgButtonNewFolder,
+    msgButtonNext,
+    msgButtonNo,
+    msgButtonNoToAll,
+    msgButtonOK,
+    msgButtonWizardBrowse,
+    msgButtonYes,
+    msgButtonYesToAll,
+    msgCannotContinue,
+    msgChangeDiskTitle,
+    msgClickFinish,
+    msgClickNext,
+    msgCompactInstallation,
+    msgComponentSize1,
+    msgComponentSize2,
+    msgComponentsDiskSpaceMBLabel,
+    msgConfirmDeleteSharedFile2,
+    msgConfirmDeleteSharedFileTitle,
+    msgConfirmTitle,
+    msgConfirmUninstall,
+    msgCustomInstallation,
+    msgDirDoesntExist,
+    msgDirDoesntExistTitle,
+    msgDirExists,
+    msgDirExistsTitle,
+    msgDirNameTooLong,
+    msgDiskSpaceMBLabel,
+    msgDiskSpaceWarning,
+    msgDiskSpaceWarningTitle,
+    msgEntryAbortRetryIgnore,
+    msgErrorChangingAttr,
+    msgErrorCopying,
+    msgErrorCreatingDir,
+    msgErrorCreatingTemp,
+    msgErrorExecutingProgram,
+    msgErrorFunctionFailed,
+    msgErrorFunctionFailedNoCode,
+    msgErrorFunctionFailedWithMessage,
+    msgErrorIniEntry,
+    msgErrorInternal2,
+    msgErrorOpeningReadme,
+    msgErrorReadingExistingDest,
+    msgErrorReadingSource,
+    msgErrorRegCreateKey,
+    msgErrorRegisterServer,
+    msgErrorRegisterServerMissingExport,
+    msgErrorRegisterTypeLib,
+    msgErrorRegOpenKey,
+    msgErrorRegWriteKey,
+    msgErrorRenamingTemp,
+    msgErrorReplacingExistingFile,
+    msgErrorRestartingComputer,
+    msgErrorRestartReplace,
+    msgErrorTitle,
+    msgErrorTooManyFilesInDir,
+    msgExistingFileNewer,
+    msgExistingFileReadOnly,
+    msgExitSetupMessage,
+    msgExitSetupTitle,
+    msgFileAbortRetryIgnore,
+    msgFileAbortRetryIgnore2,
+    msgFileExists,
+    msgFileNotInDir2,
+    msgFinishedHeadingLabel,
+    msgFinishedLabel,
+    msgFinishedLabelNoIcons,
+    msgFinishedRestartLabel,
+    msgFinishedRestartMessage, 
+    msgFullInstallation,
+    msgGroupNameTooLong,
+    msgIncorrectPassword,
+    msgInfoAfterClickLabel,
+    msgInfoAfterLabel,
+    msgInfoBeforeClickLabel,
+    msgInfoBeforeLabel,
+    msgInformationTitle,
+    msgInstallingLabel,
+    msgInvalidDirName,
+    msgInvalidDrive,
+    msgInvalidGroupName,
+    msgInvalidPath,
+    msgLastErrorMessage,
+    msgLdrCannotCreateTemp,
+    msgLdrCannotExecTemp,
+    msgLicenseAccepted,
+    msgLicenseLabel,
+    msgLicenseLabel3,
+    msgLicenseNotAccepted,
+    msgMissingWOW64APIs,
+    msgMustEnterGroupName,
+    msgNewFolderName,
+    msgNoProgramGroupCheck2,
+    msgNoRadio,
+    msgNotOnThisPlatform,
+    msgNoUninstallWarning,
+    msgNoUninstallWarningTitle, 
+    msgOnlyAdminCanUninstall,
+    msgOnlyOnTheseArchitectures,
+    msgOnlyOnThisPlatform,
+    msgPasswordEditLabel,
+    msgPasswordLabel1,
+    msgPasswordLabel3,
+    msgPathLabel,
+    msgPowerUserPrivilegesRequired,
+    msgPreparingDesc,
+    msgPreviousInstallNotCompleted,
+    msgReadyLabel1,
+    msgReadyLabel2a,
+    msgReadyLabel2b,
+    msgReadyMemoComponents, 
+    msgReadyMemoDir, 
+    msgReadyMemoGroup,
+    msgReadyMemoTasks,
+    msgReadyMemoType,
+    msgReadyMemoUserInfo,
+    msgRunEntryExec,
+    msgRunEntryShellExec,
+    msgSelectComponentsDesc,
+    msgSelectComponentsLabel2,
+    msgSelectDirBrowseLabel,
+    msgSelectDirDesc,
+    msgSelectDirectoryLabel,
+    msgSelectDirLabel3,
+    msgSelectDiskLabel2,
+    msgSelectLanguageLabel,
+    msgSelectLanguageTitle,
+    msgSelectStartMenuFolderBrowseLabel,
+    msgSelectStartMenuFolderDesc,
+    msgSelectStartMenuFolderLabel3,
+    msgSelectTasksDesc,
+    msgSelectTasksLabel2,
+    msgSetupAborted,
+    msgSetupAppRunningError,
+    msgSetupAppTitle,
+    msgSetupFileCorrupt,
+    msgSetupFileCorruptOrWrongVer,
+    msgSetupFileMissing,
+    msgSetupLdrStartupMessage,
+    msgSetupWindowTitle,
+    msgSharedFileNameLabel,
+    msgSharedFileLocationLabel,
+    msgShowReadmeCheck,
+    msgSourceDoesntExist,
+    msgSourceIsCorrupted,
+    msgStatusCreateDirs,
+    msgStatusCreateIcons,
+    msgStatusCreateIniEntries,
+    msgStatusCreateRegistryEntries,
+    msgStatusExtractFiles,
+    msgStatusRegisterFiles,
+    msgStatusRollback,
+    msgStatusSavingUninstall,
+    msgStatusRunProgram,
+    msgStatusUninstalling,
+    msgToUNCPathname,
+    msgTranslatorNote,
+    msgUninstallAppFullTitle,
+    msgUninstallAppTitle,
+    msgUninstallDataCorrupted,
+    msgUninstalledAll,
+    msgUninstalledAndNeedsRestart,
+    msgUninstalledMost,
+    msgUninstallAppRunningError,
+    msgUninstallNotFound,
+    msgUninstallOnlyOnWin64,
+    msgUninstallOpenError,
+    msgUninstallStatusLabel,
+    msgUninstallUnknownEntry,
+    msgUninstallUnsupportedVer,
+    msgUserInfoDesc,
+    msgUserInfoName,
+    msgUserInfoNameRequired,
+    msgUserInfoOrg,
+    msgUserInfoSerial,
+    msgWelcomeLabel1,
+    msgWelcomeLabel2,
+    msgWinVersionTooHighError,
+    msgWinVersionTooLowError,
+    msgWizardInfoAfter,
+    msgWizardInfoBefore,
+    msgWizardInstalling,
+    msgWizardLicense,
+    msgWizardPassword,
+    msgWizardPreparing,
+    msgWizardReady,
+    msgWizardSelectDir,
+    msgWizardSelectComponents,
+    msgWizardSelectProgramGroup,
+    msgWizardSelectTasks,
+    msgWizardUninstalling,
+    msgWizardUserInfo,
+    msgYesRadio);
+    
+  TSetupStep = (ssPreInstall, ssInstall, ssPostInstall, ssDone);
+
+  TUninstallStep = (usAppMutexCheck, usUninstall, usPostUninstall, usDone);
+
+  TExecWait = (ewNoWait, ewWaitUntilTerminated, ewWaitUntilIdle);
+  
+  TSetupProcessorArchitecture = (paUnknown, paX86, paX64, paIA64);
+  
+  TFileTime = record
+    dwLowDateTime: DWORD;
+    dwHighDateTime: DWORD;
+  end;
+
+  TFindRec = record
+    Name: String;               // name of the found file (no path)
+    Attributes: LongWord;       // file attributes
+    SizeHigh: LongWord;         // size of the file, upper 32 bits
+    SizeLow: LongWord;          // size of the file, lower 32 bits
+    CreationTime: TFileTime;    // time file was created
+    LastAccessTime: TFileTime;  // time file was last accessed
+    LastWriteTime: TFileTime;   // time file was last modified
+    AlternateName: String;      // file's short name (empty if none)
+    FindHandle: THandle;        // used internally
+  end;
+
+  TWindowsVersion = record
+    Major: Cardinal;
+    Minor: Cardinal;
+    Build: Cardinal;
+    ServicePackMajor: Cardinal;
+    ServicePackMinor: Cardinal;
+    NTPlatform: Boolean;
+    ProductType: Byte;
+    SuiteMask: Word;
+  end;
+
+  TVarType = Word;
+
+  TIFException = (ErNoError, erCannotImport, erInvalidType, ErInternalError,
+    erInvalidHeader, erInvalidOpcode, erInvalidOpcodeParameter, erNoMainProc,
+    erOutOfGlobalVarsRange, erOutOfProcRange, ErOutOfRange, erOutOfStackRange,
+    ErTypeMismatch, erUnexpectedEof, erVersionError, ErDivideByZero, ErMathError,
+    erCouldNotCallProc, erOutofRecordRange, erOutOfMemory, erException,
+    erNullPointerException, erNullVariantError, erInterfaceNotSupported,
+    erCustomError);
+
+  TArrayOfLongWord = array of LongWord;
+
+  TNewCommonCalendar = class(TWinControl)
+    procedure BoldDays(Days: TArrayLongWord; var MonthBoldInfo: LongWord);
+  end;
+
+  TNewMonthCalColors = class(TPersistent)
+    constructor Create(AOwner: TNewCommonCalendar);
+    property BackColor: TColor; read write;
+    property TextColor: TColor; read write;
+    property TitleBackColor: TColor; read write;
+    property TitleTextColor: TColor; read write;
+    property MonthBackColor: TColor; read write;
+    property TrailingTextColor: TColor; read write;
+  end;
+
+  TDateTime = Double;
+
+  TDate = TDateTime;
+
+  TTime = TDateTime;
+
+  TDateTimeKind = (dtkDate, dtkTime);
+
+  TDTDateMode = (dmComboBox, dmUpDown);
+
+  TDTDateFormat = (dfShort, dfLong);
+
+  TDTCalAlignment = (dtaLeft, dtaRight);
+
+  TDTParseInputEvent = procedure(Sender: TObject; const UserString: string; var DateAndTime: TDateTime; var AllowChange: Boolean);
+
+  TNewDateTimePicker = class(TNewCommonCalendar)
+    property DateTime: TDateTime; read write;
+    property DroppedDown: Boolean; read;
+    property CalAlignment: TDTCalAlignment; read write;
+    property CalColors: TNewMonthCalColors; read write;
+    property Date: TDate; read write;
+    property Format: String; read write;
+    property Time: TTime; read write;
+    property ShowCheckbox: Boolean; read write;
+    property Checked: Boolean; read write;
+    property DateFormat: TDTDateFormat; read write;
+    property DateMode: TDTDateMode; read write;
+    property Kind: TDateTimeKind; read write;
+    property MaxDate: TDate; read write;
+    property MinDate: TDate; read write;
+    property ParseInput: Boolean; read write;
+    property OnCloseUp: TNotifyEvent; read write;
+    property OnChange: TNotifyEvent; read write;
+    property OnDropDown: TNotifyEvent; read write;
+    property OnUserInput: TDTParseInputEvent; read write;
+    property Color: TColor; read write;
+    property Font: TFont; read write;
+    property ParentColor: Boolean; read write;
+    property ParentFont: Boolean; read write;
+    property OnChange: TNotifyEvent; read write;
+    property OnClick: TNotifyEvent; read write;
+    property OnDblClick: TNotifyEvent; read write;
+    property OnEnter: TNotifyEvent; read write;
+    property OnExit: TNotifyEvent; read write;
+    property OnKeyDown: TKeyEvent; read write;
+    property OnKeyPress: TKeyPressEvent; read write;
+    property OnKeyUp: TKeyEvent; read write;
+    property DragCursor: Longint; read write;
+    property DragMode: TDragMode; read write;
+    property OnDragDrop: TDragDropEvent; read write;
+    property OnDragOver: TDragOverEvent; read write;
+    property OnEndDrag: TEndDragEvent; read write;
+    property OnStartDrag: TStartDragEvent; read write;
+  end;
+
+  TCalDayOfWeek = (dowMonday, dowTuesday, dowWednesday, dowThursday, dowFriday, dowSaturday, dowSunday, dowLocaleDefault);
+
+  TOnGetMonthInfoEvent = procedure(Sender: TObject; Month: LongWord; var MonthBoldInfo: LongWord);
+
+  TNewMonthCalendar = class(TNewCommonCalendar)
+    property AutoSize: Boolean; read write;
+    property CalColors: TNewMonthCalColors; read write;
+    property MultiSelect: Boolean; read write;
+    property Date: TDate; read write;
+    property FirstDayOfWeek: TCalDayOfWeek; read write;
+    property MaxDate: TDate; read write;
+    property MaxSelectRange: Integer; read write;
+    property MinDate: TDate; read write;
+    property ShowToday: Boolean; read write;
+    property ShowTodayCircle: Boolean; read write;
+    property WeekNumbers: Boolean; read write;
+    property OnGetMonthInfo: TOnGetMonthInfoEvent; read write;
+    property Font: TFont; read write;
+    property ParentFont: Boolean; read write;
+    property OnClick: TNotifyEvent; read write;
+    property OnDblClick: TNotifyEvent; read write;
+    property OnEnter: TNotifyEvent; read write;
+    property OnExit: TNotifyEvent; read write;
+    property OnKeyDown: TKeyEvent; read write;
+    property OnKeyPress: TKeyPressEvent; read write;
+    property OnKeyUp: TKeyEvent; read write;
+    property DragCursor: Longint; read write;
+    property DragMode: TDragMode; read write;
+    property OnDragDrop: TDragDropEvent; read write;
+    property OnDragOver: TDragOverEvent; read write;
+    property OnEndDrag: TEndDragEvent; read write;
+    property OnStartDrag: TStartDragEvent; read write;
+    property OnChange: TNotifyEvent; read write;
+  end;
+
+(******************************************************************)
+(*                                                                *)
+(* The Pascal script can call several built-in support functions. *)
+(*                                                                *)
+(******************************************************************)
+
+// Support functions
+// Here's the list of support functions that can be called from
+// within the Pascal script.
+
+// Setup or Uninstall Info functions
+
+function GetCmdTail: String; // Returns all command line parameters passed to Setup or Uninstall as a single String.
+function ParamCount: Integer; // Returns the number of command line parameters passed to Setup or Uninstall.
+function ParamStr(Index: Integer): String; // Returns the Index-th command line parameter passed to Setup or Uninstall.
+
+function ActiveLanguage: String; // Returns the name of the active language.
+
+function CustomMessage(const MsgName: String): String; // Returns the value of the [CustomMessages] entry with the specified name.
+function FmtMessage(const S: String; const Args: array of String): String; // Formats the String S using the specified String arguments.
+function SetupMessage(const ID: TSetupMessageID): String; // Returns the value of the specified message.
+
+function WizardDirValue: String; // Returns the current contents of the edit control on the Select Destination Location page of the wizard.
+function WizardGroupValue: String; // Returns the current contents of the edit control on the Select Start Menu Folder page of the wizard.
+function WizardNoIcons: Boolean; // Returns the current setting of the Don't create any icons check box on the Select Start Menu Folder page of the wizard.
+function WizardSetupType(const Description: Boolean): String; // Returns the name or description of the setup type selected by the user.
+function WizardSelectedComponents(const Descriptions: Boolean): String; // Returns a comma-separated list of names or descriptions of the components selected by the user.
+function WizardSelectedTasks(const Descriptions: Boolean): String; // Returns a comma-separated list of names or descriptions of the tasks selected by the user.
+function WizardSilent: Boolean; // Returns True if Setup is running silently, False otherwise.
+
+function IsUninstaller: Boolean;
+function UninstallSilent: Boolean;
+
+function CurrentFileName: String;
+
+function ExpandConstant(const S: String): String;
+function ExpandConstantEx(const S: String; const CustomConst, CustomValue: String): String;
+
+function IsComponentSelected(const Components: String): Boolean;
+function IsTaskSelected(const Tasks: String): Boolean;
+
+procedure ExtractTemporaryFile(const FileName: String);
+procedure ExtractTemporaryFileEx(const FileName: String; const DestDir: String);
+procedure ExtractTemporaryFileToStream(const FileName: String; const Stream: TStream);
+function ExtractTemporaryFileSize(const FileName: String): LongWord;
+procedure ExtractTemporaryFileToBuffer(const FileName: String; Buffer: Integer);
+
+function GetSetupPreviousData(const ValueName, DefaultValueData: String): String;
+function SetSetupPreviousData(const PreviousDataKey: Integer; const ValueName, ValueData: String): Boolean;
+function GetPreviousData(const ValueName, DefaultValueData: String): String;
+function SetPreviousData(const PreviousDataKey: Integer; const ValueName, ValueData: String): Boolean;
+
+function Terminated: Boolean;
+
+function RmSessionStarted: Boolean;
+
+// Exception functions
+
+procedure Abort; // Escapes from the current execution path without reporting an error.
+procedure RaiseException(const Msg: String); //
+
+function GetExceptionMessage: String;
+procedure ShowExceptionMessage;
+
+procedure RaiseLastException;
+procedure RaiseException(Ex: TIFException; Param: String);
+function ExceptionType: TIFException;
+function ExceptionParam: String;
+function ExceptionProc: Cardinal;
+function ExceptionPos: Cardinal;
+function ExceptionToString(er: TIFException; Param: String): String;
+
+// System functions
+
+function IsAdminLoggedOn: Boolean;
+function IsPowerUserLoggedOn: Boolean;
+function UsingWinNT: Boolean;
+function GetWindowsVersion: Cardinal;
+procedure GetWindowsVersionEx(var Version: TWindowsVersion);
+function GetWindowsVersionString: String;
+
+function IsWin64: Boolean;
+function Is64BitInstallMode: Boolean;
+function ProcessorArchitecture: TSetupProcessorArchitecture;
+
+function InstallOnThisVersion(const MinVersion, OnlyBelowVersion: String): Integer;
+
+function GetEnv(const EnvVar: String): String;
+function GetUserNameString: String;
+function GetComputerNameString: String;
+
+function GetUILanguage: Integer;
+
+function FontExists(const FaceName: String): Boolean;
+
+function FindWindowByClassName(const ClassName: String): HWND;
+function FindWindowByWindowName(const WindowName: String): HWND;
+function SendMessage(const Wnd: HWND; const Msg, WParam, LParam: Longint): Longint;
+function PostMessage(const Wnd: HWND; const Msg, WParam, LParam: Longint): Boolean;
+function SendNotifyMessage(const Wnd: HWND; const Msg, WParam, LParam: Longint): Boolean;
+function RegisterWindowMessage(const Name: String): Longint;
+function SendBroadcastMessage(const Msg, WParam, LParam: Longint): Longint;
+function PostBroadcastMessage(const Msg, WParam, LParam: Longint): Boolean;
+function SendBroadcastNotifyMessage(const Msg, WParam, LParam: Longint): Boolean;
+
+procedure CreateMutex(const Name: String);
+function CheckForMutexes(Mutexes: String): Boolean;
+
+function MakePendingFileRenameOperationsChecksum: String;
+
+procedure UnloadDLL(Filename: String);
+function DLLGetLastError(): Longint;
+
+// String functions
+
+function Chr(B: Byte): Char;
+function Ord(C: Char): Byte;
+function Copy(S: String; Indx, Count: Integer): String;
+function Length(S: String): Longint;
+function Lowercase(S: String): String;
+function Uppercase(S: String): String;
+function AnsiLowercase(S: String): String;
+function AnsiUppercase(S: String): String;
+function StringOfChar(C: Char; I: Longint): String;
+function Replicate(C: Char; I: Longint): String;
+procedure Delete(var S: String; Indx, Count: Integer);
+procedure Insert(Source: String; var Dest: String; Indx: Integer);
+function StringChange(var S: String; const FromStr, ToStr: String): Integer;
+function StringChangeEx(var S: String; const FromStr, ToStr: String; const SupportDBCS: Boolean): Integer;
+function Pos(SubStr, S: String): Integer;
+function AddQuotes(const S: String): String;
+function RemoveQuotes(const S: String): String;
+function ConvertPercentStr(var S: String): Boolean;
+
+function CompareText(const S1, S2: String): Integer;
+function CompareStr(const S1, S2: String): Integer;
+
+function Format(const Format: String; const Args: array of const): String;
+function FormatFloat(const Format: string; Value: Extended): string;
+
+function Trim(const S: String): String;
+function TrimLeft(const S: String): String;
+function TrimRight(const S: String): String;
+
+function StrToIntDef(S: String; def: Longint): Longint;
+function StrToInt(S: String): Longint;
+function IntToStr(I: Longint): String;
+
+function CharLength(const S: String; const Index: Integer): Integer;
+
+function AddBackslash(const S: String): String;
+function RemoveBackslashUnlessRoot(const S: String): String;
+function RemoveBackslash(const S: String): String;
+function AddPeriod(const S: String): String;
+function ChangeFileExt(const FileName, Extension: String): String;
+function ExtractFileExt(const FileName: String): String;
+function ExtractFileDir(const FileName: String): String;
+function ExtractFilePath(const FileName: String): String;
+function ExtractFileName(const FileName: String): String;
+function ExtractFileDrive(const FileName: String): String;
+function ExtractRelativePath(const BaseName, DestName: String): String;
+function ExpandFileName(const FileName: String): String;
+function ExpandUNCFileName(const FileName: String): String;
+
+function GetDateTimeString(const DateTimeFormat: String; const DateSeparator, TimeSeparator: Char): String;
+
+procedure SetLength(var S: String; L: Longint);
+procedure CharToOemBuff(var S: AnsiString);
+procedure OemToCharBuff(var S: AnsiString);
+
+function GetMD5OfString(const S: AnsiString): String;
+function GetMD5OfUnicodeString(const S: String): String;
+function GetSHA1OfString(const S: AnsiString): String;
+function GetSHA1OfUnicodeString(const S: String): String;
+
+function SysErrorMessage(ErrorCode: Integer): String;
+
+// Math functions
+
+function Sin(E: Extended): Extended;
+function Cos(E: Extended): Extended;
+function Sqrt(E: Extended): Extended;
+function Round(E: Extended): Longint;
+function Trunc(E: Extended): Longint;
+function Int(E: Extended): Extended;
+function Pi: Extended;
+function Abs(E: Extended): Extended;
+function StrToFloat(S: String): Extended;
+function FloatToStr(E: Extended): String;
+function Padl(S: String; I: Longint): String;
+function Padr(S: String; I: Longint): String;
+function Padz(S: String; I: Longint): String;
+
+// Array functions
+
+function GetArrayLength(var Arr: Array): Longint;
+procedure SetArrayLength(var Arr: Array; I: Longint);
+
+// Variant functions
+
+function Null: Variant;
+function Assigned(const P: Variant): Boolean;
+function Unassigned: Variant;
+
+function VarIsEmpty(const V: Variant): Boolean;
+function VarIsNull(const V: Variant): Boolean;
+function VarType(const V: Variant): TVarType;
+function SizeOf(const V: Variant): Longint; 
+
+// File System functions
+
+function DirExists(const Name: String): Boolean;
+function FileExists(const Name: String): Boolean;
+function FileOrDirExists(const Name: String): Boolean;
+function FileSize(const Name: String; var Size: Integer): Boolean;
+function GetSpaceOnDisk(const Path: String; const InMegabytes: Boolean; var Free, Total: Cardinal): Boolean;
+
+function FileSearch(const Name, DirList: String): String;
+function FindFirst(const FileName: String; var FindRec: TFindRec): Boolean;
+function FindNext(var FindRec: TFindRec): Boolean;
+procedure FindClose(var FindRec: TFindRec);
+
+function GetCurrentDir: String;
+function SetCurrentDir(const Dir: String): Boolean;
+function GetWinDir: String;
+function GetSystemDir: String;
+function GetSysWow64Dir: String;
+function GetTempDir: String;
+function GetShellFolder(Common: Boolean; const ID: TShellFolderID): String;
+function GetShellFolderByCSIDL(const Folder: Integer; const Create: Boolean): String;
+
+function GetShortName(const LongName: String): String;
+function GenerateUniqueName(Path: String; const Extension: String): String;
+function MinimizePathName(const Filename: String; const Font: TFont; MaxLen: Integer): String;
+
+function GetVersionNumbers(const Filename: String; var VersionMS, VersionLS: Cardinal): Boolean;
+function GetVersionNumbersString(const Filename: String; var Version: String): Boolean;
+
+function IsProtectedSystemFile(const Filename: String): Boolean;
+
+function GetMD5OfFile(const Filename: String): String;
+function GetSHA1OfFile(const Filename: String): String;
+
+function EnableFsRedirection(const Enable: Boolean): Boolean;
+
+// File functions
+
+function Exec(const Filename, Params, WorkingDir: String; const ShowCmd: Integer; const Wait: TExecWait; var ResultCode: Integer): Boolean;
+function ExecAsOriginalUser(const Filename, Params, WorkingDir: String; const ShowCmd: Integer; const Wait: TExecWait; var ResultCode: Integer): Boolean;
+function ShellExec(const Verb, Filename, Params, WorkingDir: String; const ShowCmd: Integer; const Wait: TExecWait; var ErrorCode: Integer): Boolean;
+function ShellExecAsOriginalUser(const Verb, Filename, Params, WorkingDir: String; const ShowCmd: Integer; const Wait: TExecWait; var ErrorCode: Integer): Boolean;
+
+function RenameFile(const OldName, NewName: String): Boolean;
+function FileCopy(const ExistingFile, NewFile: String; const FailIfExists: Boolean): Boolean;
+function DeleteFile(const FileName: String): Boolean;
+procedure DelayDeleteFile(const Filename: String; const Tries: Integer);
+function SetNTFSCompression(const FileOrDir: String; Compress: Boolean): Boolean;
+
+function LoadStringFromFile(const FileName: String; var S: AnsiString): Boolean;
+function LoadStringsFromFile(const FileName: String; var S: TArrayOfString): Boolean;
+function SaveStringToFile(const FileName, S: AnsiString; const Append: Boolean): Boolean;
+function SaveStringsToFile(const FileName: String; const S: TArrayOfString; const Append: Boolean): Boolean;
+function SaveStringsToUTF8File(const FileName: String; const S: TArrayOfString; const Append: Boolean): Boolean;
+
+function CreateDir(const Dir: String): Boolean;
+function ForceDirectories(Dir: String): Boolean;
+function RemoveDir(const Dir: String): Boolean;
+function DelTree(const Path: String; const IsDir, DeleteFiles, DeleteSubdirsAlso: Boolean): Boolean;
+
+function CreateShellLink(const Filename, Description, ShortcutTo, Parameters, WorkingDir, IconFilename: String; const IconIndex, ShowCmd: Integer): String;
+
+procedure RegisterServer(const Is64Bit: Boolean; const Filename: String; const FailCriticalErrors: Boolean);
+function UnregisterServer(const Is64Bit: Boolean; const Filename: String; const FailCriticalErrors: Boolean): Boolean;
+procedure RegisterTypeLibrary(const Is64Bit: Boolean; const Filename: String);
+function UnregisterTypeLibrary(const Is64Bit: Boolean; const Filename: String): Boolean;
+procedure IncrementSharedCount(const Is64Bit: Boolean; const Filename: String; const AlreadyExisted: Boolean);
+function DecrementSharedCount(const Is64Bit: Boolean; const Filename: String): Boolean;
+procedure RestartReplace(const TempFile, DestFile: String);
+procedure UnregisterFont(const FontName, FontFilename: String);
+function ModifyPifFile(const Filename: String; const CloseOnExit: Boolean): Boolean;
+
+// Registry functions
+
+function RegKeyExists(const RootKey: Integer; const SubKeyName: String): Boolean;
+function RegValueExists(const RootKey: Integer; const SubKeyName, ValueName: String): Boolean;
+
+function RegGetSubkeyNames(const RootKey: Integer; const SubKeyName: String; var Names: TArrayOfString): Boolean;
+function RegGetValueNames(const RootKey: Integer; const SubKeyName: String; var Names: TArrayOfString): Boolean;
+
+function RegQueryStringValue(const RootKey: Integer; const SubKeyName, ValueName: String; var ResultStr: String): Boolean;
+function RegQueryMultiStringValue(const RootKey: Integer; const SubKeyName, ValueName: String; var ResultStr: String): Boolean;
+function RegQueryDWordValue(const RootKey: Integer; const SubKeyName, ValueName: String; var ResultDWord: Cardinal): Boolean;
+function RegQueryBinaryValue(const RootKey: Integer; const SubKeyName, ValueName: String; var ResultStr: AnsiString): Boolean;
+
+function RegWriteStringValue(const RootKey: Integer; const SubKeyName, ValueName, Data: String): Boolean;
+function RegWriteExpandStringValue(const RootKey: Integer; const SubKeyName, ValueName, Data: String): Boolean;
+function RegWriteMultiStringValue(const RootKey: Integer; const SubKeyName, ValueName, Data: String): Boolean;
+function RegWriteDWordValue(const RootKey: Integer; const SubKeyName, ValueName: String; const Data: Cardinal): Boolean;
+function RegWriteBinaryValue(const RootKey: Integer; const SubKeyName, ValueName, Data: AnsiString): Boolean;
+
+function RegDeleteKeyIncludingSubkeys(const RootKey: Integer; const SubkeyName: String): Boolean;
+function RegDeleteKeyIfEmpty(const RootKey: Integer; const SubkeyName: String): Boolean;
+function RegDeleteValue(const RootKey: Integer; const SubKeyName, ValueName: String): Boolean;
+
+// INI File functions
+
+function IniKeyExists(const Section, Key, Filename: String): Boolean;
+function IsIniSectionEmpty(const Section, Filename: String): Boolean;
+
+function GetIniBool(const Section, Key: String; const Default: Boolean; const Filename: String): Boolean;
+function GetIniInt(const Section, Key: String; const Default, Min, Max: Longint; const Filename: String): Longint;
+function GetIniString(const Section, Key, Default, Filename: String): String;
+
+function SetIniBool(const Section, Key: String; const Value: Boolean; const Filename: String): Boolean;
+function SetIniInt(const Section, Key: String; const Value: Longint; const Filename: String): Boolean;
+function SetIniString(const Section, Key, Value, Filename: String): Boolean;
+
+procedure DeleteIniSection(const Section, Filename: String);
+procedure DeleteIniEntry(const Section, Key, Filename: String);
+
+// Custom Setup Wizard Page functions
+
+function CreateInputQueryPage(const AfterID: Integer; const ACaption, ADescription, ASubCaption: String): TInputQueryWizardPage;
+function CreateInputOptionPage(const AfterID: Integer; const ACaption, ADescription, ASubCaption: String; Exclusive, ListBox: Boolean): TInputOptionWizardPage;
+function CreateInputDirPage(const AfterID: Integer; const ACaption, ADescription, ASubCaption: String; AAppendDir: Boolean; ANewFolderName: String): TInputDirWizardPage;
+function CreateInputFilePage(const AfterID: Integer; const ACaption, ADescription, ASubCaption: String): TInputFileWizardPage;
+function CreateOutputMsgPage(const AfterID: Integer; const ACaption, ADescription, AMsg: String): TOutputMsgWizardPage;
+function CreateOutputMsgMemoPage(const AfterID: Integer; const ACaption, ADescription, ASubCaption: String; const AMsg: AnsiString): TOutputMsgMemoWizardPage;
+function CreateOutputProgressPage(const ACaption, ADescription: String): TOutputProgressWizardPage;
+function CreateCustomPage(const AfterID: Integer; const ACaption, ADescription: String): TWizardPage;
+
+function CreateCustomForm: TSetupForm;
+
+function PageFromID(const ID: Integer): TWizardPage;
+function PageIndexFromID(const ID: Integer): Integer;
+function ScaleX(X: Integer): Integer;
+function ScaleY(Y: Integer): Integer;
+
+// Dialog functions
+
+function MsgBox(const Text: String; const Typ: TMsgBoxType; const Buttons: Integer): Integer;
+function SuppressibleMsgBox(const Text: String; const Typ: TMsgBoxType; const Buttons, Default: Integer): Integer;
+function GetOpenFileName(const Prompt: String; var FileName: String; const InitialDirectory, Filter, DefaultExtension: String): Boolean;
+function GetSaveFileName(const Prompt: String; var FileName: String; const InitialDirectory, Filter, DefaultExtension: String): Boolean;
+function BrowseForFolder(const Prompt: String; var Directory: String; const NewFolderButton: Boolean): Boolean;
+function ExitSetupMsgBox: Boolean;
+
+// COM Automation objects support functions
+
+procedure OleCheck(Result: HResult);
+function CreateOleObject(const ClassName: String): Variant;
+function GetActiveOleObject(const ClassName: String): Variant;
+procedure CoFreeUnusedLibraries;
+
+// Setup Logging functions
+
+procedure Log(const S: String);
+
+// Menu functions
+
+function ShortCut(Key: Word; Shift: TShiftState): TShortCut;
+procedure ShortCutToKey(ShortCut: TShortCut; var Key: Word; var Shift: TShiftState);
+function ShortCutToText(ShortCut: TShortCut): String;
+function TextToShortCut(Text: String): TShortCut;
+function NewMenu(Owner: TComponent; const AName: String; Items: array of TMenuItem): TMainMenu;
+function NewPopupMenu(Owner: TComponent; const AName: String; Alignment: TPopupAlignment; AutoPopup: Boolean; Items: array of TMenuItem): TPopupMenu;
+function NewSubMenu(const ACaption: String; hCtx: Word; const AName: String; Items: array of TMenuItem; AEnabled: Boolean): TMenuItem;
+function NewItem(const ACaption: String; AShortCut: TShortCut; AChecked, AEnabled: Boolean; AOnClick: TNotifyEvent; hCtx: Word; const AName: String): TMenuItem;
+function NewLine: TMenuItem;
+
+// Other functions
+
+procedure Sleep(const Milliseconds: Longint);
+function Random(const Range: Integer): Integer;
+procedure Randomize;
+procedure Beep;
+
+procedure BringToFrontAndRestore;
+
+function SelectLanguageForm: TSelectLanguageForm;
+function MainForm: TMainForm;
+function WizardForm: TWizardForm;
+function UninstallProgressForm: TUninstallProgressForm;
+
+function Application: TApplication;
+function Screen: TScreen;
+
+// Enhanced functions
+procedure SetPassword(const Password: String);
+function CallbackAddr(ProcNameOrFuncName: String): Integer;
+function MsgBoxEx(AWnd: HWND; AText, ACaption: string; AType, AIcon: UINT; ATimeOut: Integer): Integer;
+function InputBoxEx(AWnd: HWND; AText, ACaption, ADefaut, APasswordChar: string; AIcon: UINT; AWidth, AHeight, ATimeOut: Integer; var AResultStr: String): Boolean;
+function PerformPreviousUninstall(ProgressBar: TNewProgressBar): Boolean;
+function HInstance: LongWord;
+
+// Date & Time function
+function Date: TDateTime;
+function DateTimeToStr(DateTime: TDateTime): String;
+procedure DateTimeToString(var Result: String; const Format: String; DateTime: TDateTime);
+function DateToStr(Date: TDateTime): String;
+function DayOfWeek(Date: TDateTime): Integer;
+procedure DecodeDate(Date: TDateTime; var Year, Month, Day: Word);
+procedure DecodeTime(Time: TDateTime; var Hour, Min, Sec, MSec: Word);
+function EncodeDate(Year, Month, Day: Word): TDateTime;
+function EncodeTime(Hour, Min, Sec, MSec: Word): TDateTime;
+function FormatDateTime(const Format: String; DateTime: TDateTime): String;
+function Now: TDateTime;
+function StrToDate(const S: String): TDateTime;
+function StrToDateTime(const S: String): TDateTime;
+function StrToTime(const S: String): TDateTime;
+function Time: TDateTime;
+function TimeToStr(Time: TDateTime): String;
+
+// Deprecated functions
+
+function LoadDLL(const DLLName: String; var ErrorCode: Integer): Longint;
+function CallDLLProc(const DLLHandle: Longint; const ProcName: String; const Param1, Param2: Longint; var Result: Longint): Boolean;
+function FreeDLL(const DLLHandle: Longint): Boolean;
+
+function CastStringToInteger(var S: String): Longint;
+function CastIntegerToString(const L: Longint): String;
+
+(********************************************************)
+(*                                                      *)
+(* Here's the list of constants used by these functions *)
+(*                                                      *)
+(********************************************************)
+
+const
+  wpWelcome = 1;
+  wpLicense = 2;
+  wpPassword = 3;
+  wpInfoBefore = 4;
+  wpUserInfo = 5;
+  wpSelectDir = 6;
+  wpSelectComponents = 7;
+  wpSelectProgramGroup = 8;
+  wpSelectTasks = 9;
+  wpReady = 10;
+  wpPreparing = 11;
+  wpInstalling = 12;
+  wpInfoAfter = 13;
+  wpFinished = 14;
+
+  mrNone = 0;
+  mrOk = 1;
+  mrCancel = 2;
+  mrAbort = 3;
+  mrRetry = 4;
+  mrIgnore = 5;
+  mrYes = 6;
+  mrNo = 7;
+  mrAll = 8;
+  mrNoToAll = 9;
+  mrYesToAll = 10;
+  crDefault = 0;
+  crNone = -1;
+  crArrow = -2;
+  crCross = -3;
+  crIBeam = -4;
+  crSizeNESW = -6;
+  crSizeNS = -7;
+  crSizeNWSE = -8;
+  crSizeWE = -9;
+  crUpArrow = -10;
+  crHourGlass = -11;
+  crDrag = -12;
+  crNoDrop = -13;
+  crHSplit = -14;
+  crVSplit = -15;
+  crMultiDrag = -16;
+  crSQLWait = -17;
+  crNo = -18;
+  crAppStart = -19;
+  crHelp = -20;
+  crHand = 1;
+
+  MB_OK = $00000000;
+  MB_OKCANCEL = $00000001;
+  MB_ABORTRETRYIGNORE = $00000002;
+  MB_YESNOCANCEL = $00000003;
+  MB_YESNO = $00000004;
+  MB_RETRYCANCEL = $00000005;
+  MB_DEFBUTTON1 = $00000000;
+  MB_DEFBUTTON2 = $00000100;
+  MB_DEFBUTTON3 = $00000200;
+  MB_SETFOREGROUND = $00010000;
+  MB_ICONWARNING = $00000030;
+  MB_ICONERROR = $00000010;
+  MB_ICONINFORMATION = $00000040;
+  MB_ICONQUESTION = $00000020;
+
+  IDOK = 1;
+  IDCANCEL = 2;
+  IDABORT = 3;
+  IDRETRY = 4;
+  IDIGNORE = 5;
+  IDYES = 6;
+  IDNO = 7;
+
+  MaxInt = $7FFFFFFF;
+
+  HWND_BROADCAST = $FFFF;
+
+  CodeRootKeyFlag32Bit = $01000000;
+  CodeRootKeyFlag64Bit = $02000000;
+
+  HKEY_CLASSES_ROOT      = $80000000;
+  HKEY_CLASSES_ROOT_32   = HKEY_CLASSES_ROOT or CodeRootKeyFlag32Bit;
+  HKEY_CLASSES_ROOT_64   = HKEY_CLASSES_ROOT or CodeRootKeyFlag64Bit;
+  HKEY_CURRENT_USER      = $80000001;
+  HKEY_CURRENT_USER_32   = HKEY_CURRENT_USER or CodeRootKeyFlag32Bit;
+  HKEY_CURRENT_USER_64   = HKEY_CURRENT_USER or CodeRootKeyFlag64Bit;
+  HKEY_LOCAL_MACHINE     = $80000002;
+  HKEY_LOCAL_MACHINE_32  = HKEY_LOCAL_MACHINE or CodeRootKeyFlag32Bit;
+  HKEY_LOCAL_MACHINE_64  = HKEY_LOCAL_MACHINE or CodeRootKeyFlag64Bit;
+  HKEY_USERS             = $80000003;
+  HKEY_USERS_32          = HKEY_USERS or CodeRootKeyFlag32Bit;
+  HKEY_USERS_64          = HKEY_USERS or CodeRootKeyFlag64Bit;
+  HKEY_PERFORMANCE_DATA  = $80000004;
+  HKEY_CURRENT_CONFIG    = $80000005;
+  HKEY_CURRENT_CONFIG_32 = HKEY_CURRENT_CONFIG or CodeRootKeyFlag32Bit;
+  HKEY_CURRENT_CONFIG_64 = HKEY_CURRENT_CONFIG or CodeRootKeyFlag64Bit;
+  HKEY_DYN_DATA          = $80000006;
+
+  HKCR   = HKEY_CLASSES_ROOT;
+  HKCR32 = HKEY_CLASSES_ROOT or CodeRootKeyFlag32Bit;
+  HKCR64 = HKEY_CLASSES_ROOT or CodeRootKeyFlag64Bit;
+  HKCU   = HKEY_CURRENT_USER;
+  HKCU32 = HKEY_CURRENT_USER or CodeRootKeyFlag32Bit;
+  HKCU64 = HKEY_CURRENT_USER or CodeRootKeyFlag64Bit;
+  HKLM   = HKEY_LOCAL_MACHINE;
+  HKLM32 = HKEY_LOCAL_MACHINE or CodeRootKeyFlag32Bit;
+  HKLM64 = HKEY_LOCAL_MACHINE or CodeRootKeyFlag64Bit;
+  HKU    = HKEY_USERS;
+  HKU32  = HKEY_USERS or CodeRootKeyFlag32Bit;
+  HKU64  = HKEY_USERS or CodeRootKeyFlag64Bit;
+  HKCC   = HKEY_CURRENT_CONFIG;
+  HKCC32 = HKEY_CURRENT_CONFIG or CodeRootKeyFlag32Bit;
+  HKCC64 = HKEY_CURRENT_CONFIG or CodeRootKeyFlag64Bit;
+
+  SW_HIDE = 0;
+  SW_SHOWNORMAL = 1;
+  SW_SHOWMINIMIZED = 2;
+  SW_SHOWMAXIMIZED = 3;
+  SW_SHOW = 5;
+  SW_SHOWMINNOACTIVE = 7;
+
+  FILE_ATTRIBUTE_READONLY            = $00000001;
+  FILE_ATTRIBUTE_HIDDEN              = $00000002;
+  FILE_ATTRIBUTE_SYSTEM              = $00000004;
+  FILE_ATTRIBUTE_DIRECTORY           = $00000010;
+  FILE_ATTRIBUTE_ARCHIVE             = $00000020;
+  FILE_ATTRIBUTE_DEVICE              = $00000040;
+  FILE_ATTRIBUTE_NORMAL              = $00000080;
+  FILE_ATTRIBUTE_TEMPORARY           = $00000100;
+  FILE_ATTRIBUTE_SPARSE_FILE         = $00000200;
+  FILE_ATTRIBUTE_REPARSE_POINT       = $00000400;
+  FILE_ATTRIBUTE_COMPRESSED          = $00000800;
+  FILE_ATTRIBUTE_OFFLINE             = $00001000;
+  FILE_ATTRIBUTE_NOT_CONTENT_INDEXED = $00002000;
+  FILE_ATTRIBUTE_ENCRYPTED           = $00004000;
+
+  VER_NT_WORKSTATION       = $0000001;
+  VER_NT_DOMAIN_CONTROLLER = $0000002;
+  VER_NT_SERVER            = $0000003;
+
+  VER_SUITE_SMALLBUSINESS            = $00000001;
+  VER_SUITE_ENTERPRISE               = $00000002;
+  VER_SUITE_BACKOFFICE               = $00000004;
+  VER_SUITE_COMMUNICATIONS           = $00000008;
+  VER_SUITE_TERMINAL                 = $00000010;
+  VER_SUITE_SMALLBUSINESS_RESTRICTED = $00000020;
+  VER_SUITE_EMBEDDEDNT               = $00000040;
+  VER_SUITE_DATACENTER               = $00000080;
+  VER_SUITE_SINGLEUSERTS             = $00000100;
+  VER_SUITE_PERSONAL                 = $00000200;
+  VER_SUITE_BLADE                    = $00000400;
+  VER_SUITE_EMBEDDED_RESTRICTED      = $00000800;
+  VER_SUITE_SECURITY_APPLIANCE       = $00001000;
+
+  soFromBeginning = 0;
+  soFromCurrent = 1;
+  soFromEnd = 2;
+  toEOF = #0;
+  toSymbol = #1;
+  toString = #2;
+  toInteger = #3;
+  toFloat = #4;
+  fmCreate = $FFFF;
+  fmOpenRead = 0;
+  fmOpenWrite = 1;
+  fmOpenReadWrite = 2;
+  fmShareCompat = 0;
+  fmShareExclusive = $10;
+  fmShareDenyWrite = $20;
+  fmShareDenyRead = $30;
+  fmShareDenyNone = $40;
+  SecsPerDay = 86400;
+  MSecPerDay = 86400000;
+  DateDelta = 693594;
+
+  clScrollBar           = $80000000;
+  clBackground          = $80000001;
+  clActiveCaption       = $80000002;
+  clInactiveCaption     = $80000003;
+  clMenu                = $80000004;
+  clWindow              = $80000005;
+  clWindowFrame         = $80000006;
+  clMenuText            = $80000007;
+  clWindowText          = $80000008;
+  clCaptionText         = $80000009;
+  clActiveBorder        = $8000000A;
+  clInactiveBorder      = $8000000B;
+  clAppWorkSpace        = $8000000C;
+  clHighlight           = $8000000D;
+  clHighlightText       = $8000000E;
+  clBtnFace             = $8000000F;
+  clBtnShadow           = $80000010;
+  clGrayText            = $80000011;
+  clBtnText             = $80000012;
+  clInactiveCaptionText = $80000013;
+  clBtnHighlight        = $80000014;
+  cl3DDkShadow          = $80000015;
+  cl3DLight             = $80000016;
+  clInfoText            = $80000017;
+  clInfoBk              = $80000018;
+  clHotLight            = $8000001A;
+
+  clBlack   = $000000;
+  clMaroon  = $000080;
+  clGreen   = $008000;
+  clOlive   = $008080;
+  clNavy    = $800000;
+  clPurple  = $800080;
+  clTeal    = $808000;
+  clGray    = $808080;
+  clSilver  = $C0C0C0;
+  clRed     = $0000FF;
+  clLime    = $00FF00;
+  clYellow  = $00FFFF;
+  clBlue    = $FF0000;
+  clFuchsia = $FF00FF;
+  clAqua    = $FFFF00;
+  clLtGray  = $C0C0C0;
+  clDkGray  = $808080;
+  clWhite   = $FFFFFF;
+  clNone    = $1FFFFFFF;
+  clDefault = $20000000;
+
+  irInstall           = 0;
+  irNotOnThisPlatform = 1;
+  irVerTooLow         = 2;
+  irVerTooHigh        = 3;
+  irInvalid           = 4;

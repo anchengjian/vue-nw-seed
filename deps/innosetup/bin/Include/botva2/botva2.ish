@@ -1,0 +1,293 @@
+#ifndef _BOTVA2_ISH_
+  #Define _BOTVA2_ISH_ __PATHFILENAME__
+  #expr Plugin_Init
+
+  #include "CallbackCtrl.Ish"
+  #define Botva2_Dll "botva2.dll"
+
+  #expr AddAutoPDirs( Botva2_Dll )
+
+[Files]
+Source: {#PluginDir}\{#Botva2_Dll}; DestDir: {#Plugin_DestDir}; Flags: {#Plugin_FileFlags}
+
+[Code]
+//модуль для работы ?библиотеко?botva2.dll версии  0.9.5
+//Created by South.Tver 02.2011
+
+const
+  BTN_MAX_PATH = 1024; //не изме?ть !!!
+
+  //идентификаторы событи?для кнопок
+  BtnClickEventID      = 1;
+  BtnMouseEnterEventID = 2;
+  BtnMouseLeaveEventID = 3;
+  BtnMouseMoveEventID  = 4;
+  BtnMouseDownEventID  = 5;
+  BtnMouseUpEventID    = 6;
+
+  //выравнивание текста на кнопка?
+  balLeft    = 0;  //выравнивание текста по левому краю
+  balCenter  = 1;  //горизонтальное выравнивание текста по центру
+  balRight   = 2;  //выравнивание текста по правом?краю
+  balVCenter = 4;  //вертикальное выравнивание текста по центру
+
+type
+  TBtnEventProc = procedure(h:HWND);
+
+  TTextBuf      = array [0..BTN_MAX_PATH-1] of AnsiChar; //не ме?ть размерност?массив?!!!
+
+//для выполнен? нажати?на кнопки нуже?innocallback
+function WrapBtnCallback(Callback: TBtnEventProc; ParamCount: Integer): Longword; {# CallbackCtrl_External };
+
+function ImgLoad(Wnd :HWND; FileName :PAnsiChar; Left, Top, Width, Height :integer; Stretch, IsBkg :boolean) :Longint; external 'ImgLoad@{#Plugin_CodeDir(Botva2_Dll)} {#Plugin_CodeFlags}';
+//загружае?изображени??па?ть, сохраняет переданные параметр?
+//Wnd          - хэнд?окна, ?которо?буде?выведено изображени?
+//FileName     - файл изображения
+//Left,Top     - координаты верхнего левого угла вывода изображения (?координата?клиентской област?Wnd)
+//Width,Height - ширина, высота изображения
+//               если Stretch=True, то изображени?буде?растянуто/сжат??прямоугольной област?
+//               Rect.Left:=Left;
+//               Rect.Top:=Top;
+//               Rect.Right:=Left+Width;
+//               Rect.Bottom:=Top+Height;
+//               если Stretch=False, то параметр?Width,Height игнорируют? ?вычисляют? само?ImgLoad, ?? можн?передать 0
+//Stretch      - масштабировать изображени?ил?не?
+//IsBkg        - если IsBkg=True, изображени?буде?выведено на фоне форм?
+//               поверх него буду?отрисованы графически?объект?(TLabel, TBitmapImage ???),
+//               зате?поверх всег?буду?выведены изображения ?флагом IsBkg=False
+//возвращаемое значение - указател?на структур? храняще?изображени??ег?парметры, приведенны??типу Longint
+//изображения буду?выведены ?то?последовательности, ?которо?вызывает? ImgLoad
+
+procedure ImgSetVisiblePart(img:Longint; NewLeft, NewTop, NewWidth, NewHeight : integer); external 'ImgSetVisiblePart@{#Plugin_CodeDir(Botva2_Dll)} {#Plugin_CodeFlags}';
+//сохраняет новы?координаты видимо?част?изображения, нову?ширину ?высоту. ?координата?оригинальног?изображения
+//img                - значение полученное пр?вызове ImgLoad.
+//NewLeft,NewTop     - новы?левы?верхни?угол видимо?област?
+//NewWidth,NewHeight - новая ширина, высота видимо?област?
+//PS изначально (пр?вызове ImgLoad) изображени?считается полность?видимы?
+//   если возникла необходимост?отображать только част?картинки, то используем эт?процедур?
+
+procedure ImgGetVisiblePart(img:Longint; var Left, Top, Width, Height : integer); external 'ImgGetVisiblePart@{#Plugin_CodeDir(Botva2_Dll)} {#Plugin_CodeFlags}';
+//возвращает координаты видимо?част?изображения, ширину ?высоту
+//img                - значение полученное пр?вызове ImgLoad
+//NewLeft,NewTop     - левы?верхни?угол видимо?област?
+//NewWidth,NewHeight - ширина, высота видимо?област?
+
+procedure ImgSetPosition(img :Longint; NewLeft, NewTop, NewWidth, NewHeight :integer); external 'ImgSetPosition@{#Plugin_CodeDir(Botva2_Dll)} {#Plugin_CodeFlags}';
+//сохраняет новы?координаты для вывода изображения, нову?ширину ?высоту. ?координата?родительског?окна
+//img                - значение полученное пр?вызове ImgLoad
+//NewLeft,NewTop     - новы?левы?верхни?угол
+//NewWidth,NewHeight - новая ширина, высота. если ?ImgLoad бы?переда?Stretch=False, то NewWidth,NewHeight игнорируют?
+
+procedure ImgGetPosition(img:Longint; var Left, Top, Width, Height:integer); external 'ImgGetPosition@{#Plugin_CodeDir(Botva2_Dll)} {#Plugin_CodeFlags}';
+//возвращает координаты вывода изображения, ширину ?высоту
+//img          - значение полученное пр?вызове ImgLoad
+//Left,Top     - левы?верхни?угол
+//Width,Height - ширина, высота.
+
+procedure ImgSetVisibility(img :Longint; Visible :boolean); external 'ImgSetVisibility@{#Plugin_CodeDir(Botva2_Dll)} {#Plugin_CodeFlags}';
+//сохраняет параметр видимост?изображения
+//img     - значение полученное пр?вызове ImgLoad
+//Visible - видимост?
+
+function ImgGetVisibility(img:Longint):boolean; external 'ImgGetVisibility@{#Plugin_CodeDir(Botva2_Dll)} {#Plugin_CodeFlags}';
+//img - значение полученное пр?вызове ImgLoad
+//возвращаемое значение - видимост?изображения
+
+procedure ImgSetTransparent(img:Longint; Value:integer); external 'ImgSetTransparent@{#Plugin_CodeDir(Botva2_Dll)} {#Plugin_CodeFlags}';
+//устанавливае?прозрачность изображения
+//img   - значение полученное пр?вызове ImgLoad
+//Value - прозрачность (0-255)
+
+function ImgGetTransparent(img:Longint):integer; external 'ImgGetTransparent@{#Plugin_CodeDir(Botva2_Dll)} {#Plugin_CodeFlags}';
+//получить значение прозрачности
+//img   - значение полученное пр?вызове ImgLoad
+//возвращаемое значение - текущая прозрачность изображения
+
+procedure ImgRelease(img :Longint); external 'ImgRelease@{#Plugin_CodeDir(Botva2_Dll)} {#Plugin_CodeFlags}';
+//удаляет изображени?из па?ти
+//img - значение полученное пр?вызове ImgLoad
+
+procedure ImgApplyChanges(h:HWND); external 'ImgApplyChanges@{#Plugin_CodeDir(Botva2_Dll)} {#Plugin_CodeFlags}';
+//формируе?окончательно?изображени?для вывода экра?
+//учитыв? вс?изменения внесенны?вызовами ImgLoad, ImgSetPosition, ImgSetVisibility, ImgRelease ?обновляет окно
+//h - хэнд?окна, для которого необходимо сформировать ново?изображени?
+
+
+
+function BtnCreate(hParent :HWND; Left, Top, Width, Height :integer; FileName :PAnsiChar; ShadowWidth :integer; IsCheckBtn :boolean) :HWND; external 'BtnCreate@{#Plugin_CodeDir(Botva2_Dll)} {#Plugin_CodeFlags}';
+//hParent           - хэнд?окна-родите?, на которо?буде?создан?кнопка
+//Left,Top,
+//Width,Height      - бе?комментариев. то же чт??для обычны?кнопок
+//FileName          - файл ?изображением сост?ни?кнопки
+//                    для обычно?кнопки нужн?4 сост?ния кнопки (соответственно 4 изображения)
+//                    для кнопки ?IsCheckBtn=True нужн?8 изображени?(ка?для чекбокса)
+//                    изображения сост?ни?должны располагаться вертикальн?
+//ShadowWidth       - ко?во пикселей от кр? рисунк?кнопки, до реальной ее границ?на рисунк?
+//                    нужн?чтоб?сост?ни?кнопки ?курсор на не?ме?лись ка?положено
+//IsCheckBtn        - если True, то буде?создан?кнопка (аналог CheckBox) имеющая включенное ?выключенно?сост?ни?
+//                    если False, то создастся обычная кнопка
+//возвращаемое значение - хэнд?созданно?кнопки
+
+procedure BtnSetText(h :HWND; Text :PAnsiChar); external 'BtnSetText@{#Plugin_CodeDir(Botva2_Dll)} {#Plugin_CodeFlags}';
+//устанавливае?текс?на кнопке (аналог Button.Caption:='bla-bla-bla')
+//h    - хэнд?кнопки (результа?возвращенный BtnCreate)
+//Text - текс? которы?мы хоти?увидет?на кнопке
+
+function BtnGetText_(h:HWND; var Text:TTextBuf):integer; external 'BtnGetText@{#Plugin_CodeDir(Botva2_Dll)} {#Plugin_CodeFlags}';
+//получает текс?кнопки
+//h    - хэнд?кнопки (результа?возвращенный BtnCreate)
+//Text - буфе?принимающи?текс?кнопки
+//возвращаемое значение - длин?текста
+
+procedure BtnSetTextAlignment(h :HWND; HorIndent, VertIndent :integer; Alignment :DWORD); external 'BtnSetTextAlignment@{#Plugin_CodeDir(Botva2_Dll)} {#Plugin_CodeFlags}';
+//устанавливае?выравнивание текста на кнопке
+//h          - хэнд?кнопки (результа?возвращенный BtnCreate)
+//HorIndent  - горизонтальный отступ текста от кр? кнопки
+//VertIndent - вертикальный отступ текста от кр? кнопки
+//Alignment  - выравнивание текста. задает? константам?balLeft, balCenter, balRight, balVCenter,
+//             ил?комбинацие?balVCenter ?остальными. например, balVCenter or balRight
+
+procedure BtnSetFont(h :HWND; Font :Cardinal); external 'BtnSetFont@{#Plugin_CodeDir(Botva2_Dll)} {#Plugin_CodeFlags}';
+//устанавливае?шриф?для кнопки
+//h    - хэнд?кнопки (результа?возвращенный BtnCreate)
+//Font - дескриптор устанавливаемого шрифта
+//       чтоб?не мучать? ?WinAPI-шным?функциями можн?создат?шриф?стандартными средствами инно ?передать ег?хэнд?
+//       например,
+//       var
+//         Font:TFont;
+//         . . .
+//       begin
+//         . . .
+//         Font:=TFont.Create;
+//         вс?свойства можн?не устанавливат? пр?создании свойства заполняют? значен?ми по умолчани? ме?ем только то чт?на?нужн?
+//         with Font do begin
+//           Name:='Tahoma';
+//           Size:=10;
+//           . . .
+//         end;
+//         BtnSetFont(hBtn,Font.Handle);
+//         . . .
+//       end;
+//       ну ?пр?выходе из программ?(ил?когд?он станет не нуже? не забываем уничтожить свой шриф?Font.Free;
+
+procedure BtnSetFontColor(h :HWND; NormalFontColor, FocusedFontColor, PressedFontColor, DisabledFontColor :Cardinal); external 'BtnSetFontColor@{#Plugin_CodeDir(Botva2_Dll)} {#Plugin_CodeFlags}';
+//устанавливае?цвет шрифта для кнопки во включенном ?выключенно?сосотояни?
+//h                 - хэнд?кнопки (результа?возвращенный BtnCreate)
+//NormalFontColor   - цвет текста на кноп??нормальном сост?ни?
+//FocusedFontColor  - цвет текста на кноп??подсвеченном сост?ни?
+//PressedFontColor  - цвет текста на кноп??нажато?сост?ни?
+//DisabledFontColor - цвет текста на кноп??отключенно?сост?ни?
+
+function BtnGetVisibility(h :HWND) :boolean; external 'BtnGetVisibility@{#Plugin_CodeDir(Botva2_Dll)} {#Plugin_CodeFlags}';
+//получает видимост?кнопки (аналог f:=Button.Visible)
+//h - хэнд?кнопки (результа?возвращенный BtnCreate)
+//возвращаемое значение - видимост?кнопки
+
+procedure BtnSetVisibility(h :HWND; Value :boolean); external 'BtnSetVisibility@{#Plugin_CodeDir(Botva2_Dll)} {#Plugin_CodeFlags}';
+//устанавливае?видимост?кнопки (аналог Button.Visible:=True / Button.Visible:=False)
+//h     - хэнд?кнопки (результа?возвращенный BtnCreate)
+//Value - значение видимост?
+
+function BtnGetEnabled(h :HWND) :boolean; external 'BtnGetEnabled@{#Plugin_CodeDir(Botva2_Dll)} {#Plugin_CodeFlags}';
+//получает доступност?кнопки (аналог f:=Button.Enabled)
+//h - хэнд?кнопки (результа?возвращенный BtnCreate)
+//возвращаемое значение - доступност?кнопки
+
+procedure BtnSetEnabled(h :HWND; Value :boolean); external 'BtnSetEnabled@{#Plugin_CodeDir(Botva2_Dll)} {#Plugin_CodeFlags}';
+//устанвливает доступност?кнопки (аналог Button.Enabled:=True / Button.Enabled:=False)
+//h - хэнд?кнопки (результа?возвращенный BtnCreate)
+//Value - значение доступност?кнопки
+
+function BtnGetChecked(h :HWND) :boolean; external 'BtnGetChecked@{#Plugin_CodeDir(Botva2_Dll)} {#Plugin_CodeFlags}';
+//получает сост?ни?(включена/выключен? кнопки (аналог f:=Checkbox.Checked)
+//h - хэнд?кнопки (результа?возвращенный BtnCreate)
+
+procedure BtnSetChecked(h :HWND; Value :boolean); external 'BtnSetChecked@{#Plugin_CodeDir(Botva2_Dll)} {#Plugin_CodeFlags}';
+//устанвливает сост?ни?(включена/выключен? кнопки (аналог Сheckbox.Checked:=True / Сheckbox.Checked:=False)
+//h - хэнд?кнопки (результа?возвращенный BtnCreate)
+//Value - значение сост?ния кнопки
+
+procedure BtnSetEvent(h :HWND; EventID :integer; Event :Longword); external 'BtnSetEvent@{#Plugin_CodeDir(Botva2_Dll)} {#Plugin_CodeFlags}';
+//устанавливае?событи?для кнопки
+//h       - хэнд?кнопки (результа?возвращенный BtnCreate)
+//EventID - идентификато?события, заданный константам?  BtnClickEventID, BtnMouseEnterEventID, BtnMouseLeaveEventID, BtnMouseMoveEventID
+//Event   - адре?процедур?выполняемой пр?наступлени?указанного события
+//пример использования - BtnSetEvent(hBtn, BtnClickEventID, WrapBtnCallback(@BtnClick,1));
+
+procedure BtnGetPosition(h:HWND; var Left, Top, Width, Height: integer);  external 'BtnGetPosition@{#Plugin_CodeDir(Botva2_Dll)} {#Plugin_CodeFlags}';
+//получает координаты левого верхнего угла ?размер кнопки
+//h             - хэнд?кнопки (результа?возвращенный BtnCreate)
+//Left, Top     - координаты верхнего левого угла (?координата?родительског?окна)
+//Width, Height - ширина, высота кнопки
+
+procedure BtnSetPosition(h:HWND; NewLeft, NewTop, NewWidth, NewHeight: integer);  external 'BtnSetPosition@{#Plugin_CodeDir(Botva2_Dll)} {#Plugin_CodeFlags}';
+//устанавливае?координаты левого верхнего угла ?размер кнопки
+//h                   - хэнд?кнопки (результа?возвращенный BtnCreate)
+//NewLeft, NewTop     - новы?координаты верхнего левого угла (?координата?родительског?окна)
+//NewWidth, NewHeight - новы?ширина, высота кнопки
+
+procedure BtnRefresh(h :HWND); external 'BtnRefresh@{#Plugin_CodeDir(Botva2_Dll)} {#Plugin_CodeFlags}';
+//немедленно перерисовывает кнопку, ?обхо?очеред?сообщени? вызывать, если кнопка не успевает перерисовывать?
+//h - хэнд?кнопки (результа?возвращенный BtnCreate)
+
+procedure BtnSetCursor(h:HWND; hCur:Cardinal); external 'BtnSetCursor@{#Plugin_CodeDir(Botva2_Dll)} {#Plugin_CodeFlags}';
+//устанавливае?курсор для кнопки
+//h    - хэнд?кнопки (результа?возвращенный BtnCreate)
+//hCur - дескриптор устанавливаемого курсор?
+//DestroyCursor вызывать не обязательно, он буде?уничтоже?пр?вызове gdipShutDown;
+
+function GetSysCursorHandle(id:integer):Cardinal; external 'GetSysCursorHandle@{#Plugin_CodeDir(Botva2_Dll)} {#Plugin_CodeFlags}';
+//загружае?стандартны?курсор по ег?идентификатору
+//id - идентификато?стандартного курсор? идентификаторы стандартны?курсоров задают? константам?OCR_... , значен? которы?ищем ?инет?
+//возвращаемое значение  - дескриптор загруженного курсор?
+
+procedure gdipShutdown; external 'gdipShutdown@{#Plugin_CodeDir(Botva2_Dll)} {#Plugin_CodeFlags}';
+//обязательно вызват?пр?завершении приложен?
+
+
+
+procedure CreateFormFromImage(h:HWND; FileName:PAnsiChar); external 'CreateFormFromImage@{#Plugin_CodeDir(Botva2_Dll)} {#Plugin_CodeFlags}';
+//создат?форм?по PNG-рисунк?(?принципе можн?использовать другие формат?изображени?
+//h        - хэнд?окна
+//FileName - путь ?файл?изображения
+//на тако?форм?не буду?видн?контролы (кнопки, чекбоксы, эдит????) !!!
+
+function CreateBitmapRgn(DC: LongWord; Bitmap: HBITMAP; TransClr: DWORD; dX:integer; dY:integer): LongWord; external 'CreateBitmapRgn@{#Plugin_CodeDir(Botva2_Dll)} {#Plugin_CodeFlags}';
+//создат?регион из битмап?
+//DC       - контекст форм?
+//Bitmap   - битмап по которому буде?строит?регион
+//TransClr - цвет пикселей, которы?не буду?включены ?регион (прозрачный цвет)
+//dX,dY    - смещение регион?на форм?
+
+procedure SetMinimizeAnimation(Value: Boolean); external 'SetMinimizeAnimation@{#Plugin_CodeDir(Botva2_Dll)} {#Plugin_CodeFlags}';
+//включить/выклюсит?анимацию пр?сворачивании окон
+
+function GetMinimizeAnimation: Boolean; external 'GetMinimizeAnimation@{#Plugin_CodeDir(Botva2_Dll)} {#Plugin_CodeFlags}';
+//получить текуще?сост?ни?анимации сворачиван? окон
+
+
+
+function ArrayOfAnsiCharToAnsiString(a:TTextBuf):AnsiString;
+var
+  i:integer;
+begin
+  i:=0;
+  Result:='';
+  while a[i]<>#0 do begin
+    Result:=Result+a[i];
+    i:=i+1;
+  end;
+end;
+
+function BtnGetText(hBtn:HWND):AnsiString;
+var
+  buf:TTextBuf;
+begin
+  BtnGetText_(hBtn,buf);
+  Result:=ArrayOfAnsiCharToAnsiString(buf); //медленно работает, ка?по другом?сделат?хз
+end;
+
+[/Code]
+
+#endif
+

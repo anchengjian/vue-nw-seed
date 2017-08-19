@@ -1,0 +1,81 @@
+#ifndef _WATERLIB_ISH_
+  #Define _WATERLIB_ISH_ __PATHFILENAME__
+  #expr Plugin_Init
+
+  #define WaterLib_DLL "WaterLib.dll"
+
+[Files]
+Source: {#PluginDir}\{#WaterLib_DLL}; DestDir: {#Plugin_DestDir}; Flags: {#Plugin_FileFlags}
+
+[Code]
+//初始化创建水波图像组件于父句柄
+//HWD		创建水波效果到该句柄上
+//DrawTextSize	初始化在水波效果上的文本数量, 如不使用设为0
+//DrawBmpSize	初始化在水波效果上的位图数量, 如不使用设为0
+function WaterInit(HWD: HWND; DrawTextSize, DrawBmpSize: Integer):Integer;
+external 'WaterInit@{#Plugin_CodeDir(WaterLib_DLL)} {#Plugin_CodeFlags}';
+
+//设置水波图像组件大小与位置
+Procedure WaterSetBounds(Handle, Left, Top, Width, Height: Integer);
+external 'WaterSetBounds@{#Plugin_CodeDir(WaterLib_DLL)} {#Plugin_CodeFlags}';
+
+//ClickBlob	点击画面时产生的水滴效果幅度，0 表示禁用
+//Damping	水滴阻尼系数
+//RandomBlob	随机产生的水滴最大幅度，0 表示禁用
+//RandomDelay	随机产生水滴的延时
+//TrackBlob	鼠标移动轨迹下水滴的幅度，0 表示禁用
+Procedure WaterSetType(Handle, ClickBlob, Damping, RandomBlob, RandomDelay, TrackBlob: Integer);
+external 'WaterSetType@{#Plugin_CodeDir(WaterLib_DLL)} {#Plugin_CodeFlags}';
+
+//设置水波图像组件图片文件
+Procedure WaterSetFile(Handle: Integer; FileName: AnsiString);
+external 'WaterSetFile@{#Plugin_CodeDir(WaterLib_DLL)} {#Plugin_CodeFlags}';
+
+//设置水波图像组件是否启动水波效果
+Procedure WaterSetActive(Handle: Integer; Active: Boolean);
+external 'WaterSetActive@{#Plugin_CodeDir(WaterLib_DLL)} {#Plugin_CodeFlags}';
+
+//设置水波图像组件父句柄
+Procedure WaterSetParentWindow(Handle: Integer; HWND: HWND);
+external 'WaterSetParentWindow@{#Plugin_CodeDir(WaterLib_DLL)} {#Plugin_CodeFlags}';
+
+//清空画面上的水滴效果
+Procedure WaterClear(Handle: Integer);
+external 'WaterClear@{#Plugin_CodeDir(WaterLib_DLL)} {#Plugin_CodeFlags}';
+
+//释放指定句柄的水波图像组件
+Procedure WaterFree(Handle: Integer);
+external 'WaterFree@{#Plugin_CodeDir(WaterLib_DLL)} {#Plugin_CodeFlags}';
+
+//释放全部水波图像组件
+Procedure WaterAllFree;
+external 'WaterAllFree@{#Plugin_CodeDir(WaterLib_DLL)} {#Plugin_CodeFlags}';
+
+//设置是否支持作者, True支持则显示SkyGz.Com标识, False不支持则关闭标识显示
+Procedure WaterSupportAuthor(SupportAuthor: Boolean);
+external 'WaterSupportAuthor@{#Plugin_CodeDir(WaterLib_DLL)} {#Plugin_CodeFlags}';
+
+//以下API需要启动支持作者的标识显示时才可使用
+//主要功能作用是在水波效果图上画文本和位图
+procedure WaterDrawTextBrush(Handle, Index: Integer; BrushColor: TColor; BrushStyle: TBrushStyle);
+external 'WaterDrawTextBrush@{#Plugin_CodeDir(WaterLib_DLL)} {#Plugin_CodeFlags}';
+
+Procedure WaterDrawTextFont(Handle, Index: Integer; FontName: AnsiString; FontSize: Integer; FontColor: TColor; FontCharset: Byte);
+external 'WaterDrawTextFont@{#Plugin_CodeDir(WaterLib_DLL)} {#Plugin_CodeFlags}';
+
+procedure WaterDrawBmpBrush(Handle, Index: Integer; BrushColor: TColor; BrushStyle: TBrushStyle);
+external 'WaterDrawBmpBrush@{#Plugin_CodeDir(WaterLib_DLL)} {#Plugin_CodeFlags}';
+
+Procedure WaterDrawBmpFont(Handle, Index: Integer; FontName: AnsiString; FontSize: Integer; FontColor: TColor; FontCharset: Byte);
+external 'WaterDrawBmpFont@{#Plugin_CodeDir(WaterLib_DLL)} {#Plugin_CodeFlags}';
+
+Procedure WaterDrawBitmap(Handle, Index: Integer; X, Y: Integer; HBitmap: LongWord; Transparent: Boolean; TransparentColor: TColor);
+external 'WaterDrawBitmap@{#Plugin_CodeDir(WaterLib_DLL)} {#Plugin_CodeFlags}';
+
+Procedure WaterDrawText(Handle, Index: Integer; X, Y: Integer; S: AnsiString);
+external 'WaterDrawText@{#Plugin_CodeDir(WaterLib_DLL)} {#Plugin_CodeFlags}';
+
+[/Code]
+
+#endif
+

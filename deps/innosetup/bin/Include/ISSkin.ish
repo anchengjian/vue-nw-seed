@@ -1,0 +1,93 @@
+#ifndef _ISSKIN_ISH_
+  #Define _ISSKIN_ISH_ __PATHFILENAME__
+  #expr Plugin_Init
+
+  #ifdef UNICODE
+    #define ISSkin_Dll "ISSkinU.dll"
+  #else
+    #define ISSkin_Dll "ISSkin.dll"
+  #endif
+
+[Files]
+; Add the ISSkin DLL used for skinning Inno Setup installations.
+Source: {#PluginDir}\{#ISSkin_Dll}; DestDir: {#Plugin_DestDir}; Flags: {#Plugin_FileFlags}
+
+[Code]
+// Importing LoadSkin API from ISSkin.DLL
+procedure LoadSkin(lpszPath: String; lpszIniFileName: String);
+external 'LoadSkin@{#Plugin_CodeDir(ISSkin_Dll)} {#Plugin_CodeFlags}';
+
+// Importing UnloadSkin API from ISSkin.DLL
+procedure UnloadSkin();
+external 'UnloadSkin@{#Plugin_CodeDir(ISSkin_Dll)} {#Plugin_CodeFlags}';
+
+// Importing ShowWindow Windows API from User32.DLL
+#ifndef ShowWindow
+  #define ShowWindow
+function ShowWindow(hWnd: Integer; uType: Integer): Integer;
+external 'ShowWindow@user32.dll stdcall delayload';
+#endif
+
+function GetClassLong(Wnd: HWnd; Index: Integer): Longint;
+external 'GetClassLong{#A}@user32.dll stdcall delayload';
+function SetClassLong(Wnd: HWnd; Index: Integer; NewLong: Longint): Longint;
+external 'SetClassLong{#A}@user32.dll stdcall delayload';
+
+function CheckWin32Version(AMajor: Integer; AMinor: Integer): Boolean;
+var
+  WinVer: TWindowsVersion;
+begin
+  GetWindowsVersionEx(WinVer);
+  Result := (WinVer.Major > AMajor) or
+            ((WinVer.Major = AMajor) and
+             (WinVer.Minor >= AMinor));
+end;
+
+//注意：该方案必须在 系统中启用了 “在菜单下显示阴影”，才会有效果显示。
+procedure FormShadow(Handle: THandle);
+begin
+  if CheckWin32Version(5, 1) and (not CheckWin32Version(6, 0)) then
+    SetClassLong(Handle, -26, GetClassLong(Handle, -26) or $20000);
+end;
+
+procedure InitSkin(SkinFile, Para: String);
+begin
+  if PDir ('{#ISSkin_Dll}') = '' then Exit;
+  if not FileExists(ExpandConstant('{tmp}\' + SkinFile + '.cjstyles')) then
+  	ExtractTemporaryFile(SkinFile + '.cjstyles');
+	LoadSkin(ExpandConstant('{tmp}\' + SkinFile + '.cjstyles'), Para);
+end;
+
+procedure DeinitSkin();
+begin
+  if not FileExists(ExpandConstant('{tmp}\{#ISSkin_Dll}')) then Exit;
+	// Hide Window before unloading skin so user does not get
+	// a glimse of an unskinned window before it is closed.
+	ShowWindow(StrToInt(ExpandConstant('{wizardhwnd}')), 0);
+	UnloadSkin();
+end;
+
+
+function RandomSkin(Skins: String): Boolean;
+Var
+  I: Integer;
+  sl: TStringList;
+begin
+  sl := TStringList.Create;
+  try
+    sl.Text := Skins;
+    I := Random(sl.Count);
+    InitSkin(sl[I], '');
+  finally
+    sl.Free;
+  end;
+end;
+
+[/Code]
+
+
+#endif
+
+
+
+

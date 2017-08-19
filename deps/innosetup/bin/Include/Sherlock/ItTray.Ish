@@ -1,0 +1,107 @@
+
+#ifndef _ITTRAY_ISH_
+  #Define _ITTRAY_ISH_ __PATHFILENAME__
+  #expr Plugin_Init
+
+  #define ItTray_DLL "ittray.dll"
+  #expr AddAutoPDirs( ItTray_DLL )
+
+[Files]
+Source: {#PluginDir}\{#ItTray_DLL}; DestDir: {#Plugin_DestDir}; Flags: {#Plugin_FileFlags}
+
+[Code]
+(*
+ InnoTools Tray DLL
+ Copyright (C) Sherlock Software 2008
+ Version 0.1.0
+
+ Contact:
+  The author, Nicholas Sherlock, at nick@sherlocksoftware.org.
+  Comments, questions and suggestions welcome.
+
+ Website:
+  http://www.sherlocksoftware.org/
+
+ History:
+  0.1.0 - First release
+*)
+
+type
+ TITTFormStateCallback=procedure(hide:boolean);
+ TITTClicksCallback=procedure(ontrayicon:boolean);
+
+procedure ITT_Internal_Init(formstatecallback:TITTFormStateCallback; formhandle:longint);
+  external 'itt_init@{#Plugin_CodeDir(ItTray_DLL)} {#Plugin_CodeFlags}';
+
+procedure ITT_Internal_SetHint(hint:PAnsiChar);
+  external 'itt_sethint@{#Plugin_CodeDir(ItTray_DLL)} {#Plugin_CodeFlags}';
+
+procedure ITT_Internal_ShowBalloon(title,text:PAnsiChar; timeout:integer);
+  external 'itt_showballoon@{#Plugin_CodeDir(ItTray_DLL)} {#Plugin_CodeFlags}';
+
+
+{ Minimize setup to the tray. }
+procedure ITT_MinimizeToTray();
+  external 'itt_minimizetotray@{#Plugin_CodeDir(ItTray_DLL)} {#Plugin_CodeFlags}';
+
+
+{ Restore the setup from the tray. Calling this while
+  setup is already restored is harmless }
+procedure ITT_RestoreFromTray();
+  external 'itt_restorefromtray@{#Plugin_CodeDir(ItTray_DLL)} {#Plugin_CodeFlags}';
+
+
+{ Set "goestotray" to true if you want setup to be minimized
+  to the tray if the user minimizes the setup window}
+procedure ITT_SetMinimizesToTray(goestotray:boolean);
+  external 'itt_setminimizestotray@{#Plugin_CodeDir(ItTray_DLL)} {#Plugin_CodeFlags}';
+
+
+{ Set a handler which will be called when the tray icon or
+  balloon is clicked on }
+procedure ITT_SetClickHandler(handler:TITTClicksCallback);
+  external 'itt_setclickhandler@{#Plugin_CodeDir(ItTray_DLL)} {#Plugin_CodeFlags}';
+
+
+{ Returns true if the installer is currently minimized to the
+  tray}
+function ITT_IsInTray():boolean;
+  external 'itt_isintray@{#Plugin_CodeDir(ItTray_DLL)} {#Plugin_CodeFlags}';
+
+procedure ITT_Restore_Callback(hide:boolean);
+begin
+	if hide then
+		WizardForm.Hide()
+	else
+		WizardForm.Show();
+end;
+
+{ Set the hint which is displayed when the user
+  hovers over the tray icon (or an empty string to
+  turn off the hint).}
+procedure ITT_SetHint(hint:AnsiString);
+begin
+	ITT_Internal_SetHint(PAnsiChar(hint));
+end;
+
+{ Perform required initialization for the tray icon. Call
+  during InitializeWizard.}
+procedure ITT_Init();
+begin
+	ITT_Internal_Init(@ITT_Restore_Callback, StrToInt(ExpandConstant('{wizardhwnd}')));
+end;
+
+{ Show a pop-up balloon at the location of the tray icon,
+  using the given title and body text.
+  (You must be minimized to the tray).
+
+  The balloon automatically disappears after "timeout" seconds.}
+procedure ITT_ShowBalloon(title, text:AnsiString; timeout:integer);
+begin
+	ITT_Internal_ShowBalloon(PAnsiChar(title), PAnsiChar(text), timeout);
+end;
+
+[/Code]
+#endif
+
+

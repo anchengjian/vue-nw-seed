@@ -1,0 +1,16 @@
+#!/usr/bin/env node
+var ic = require('./iscc.js');
+var args = process.argv.slice(2);
+var files = [];
+var options = {};
+for (var i=0; i<args.length; i++) {
+	if (/^\-/.test(args[i])) {
+		var s = args[i].replace(/^\-+/, "").split("=");
+		options[s[0]] = s.length > 1 ? s.slice(1).join("=") : true;
+	} else {
+		files.push(args[i]);
+	}
+}
+for (var i=0; i<files.length; i++) {
+	ic.call(ic, files[i], options);
+}

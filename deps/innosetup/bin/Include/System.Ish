@@ -1,0 +1,113 @@
+#ifndef _SYSTEM_ISH_
+  #define _SYSTEM_ISH_
+
+//Author      : WLDNA
+//Link        : http://www.wldna.com/
+//Description : A collection, be careful to use this file
+//Modified    : 2013-11-14 11:40:59
+//Tested Inno :
+//Usage       : 
+
+[Code]
+type
+  TMyMsg = record
+      hwnd: HWND;
+      message: UINT;
+      wParam: Longint;
+      lParam: Longint;
+      time: DWORD;
+      pt: TPoint;
+  end;
+    
+const
+  PM_REMOVE = 1;
+  oneMb = 1048576;
+
+
+function PeekMessage(var lpMsg: TMyMsg; hWnd: HWND; wMsgFilterMin, wMsgFilterMax, wRemoveMsg: UINT): BOOL; external 'PeekMessage{#A}@user32.dll stdcall';
+function TranslateMessage(const lpMsg: TMyMsg): BOOL; external 'TranslateMessage@user32.dll stdcall';
+function DispatchMessage(const lpMsg: TMyMsg): Longint; external 'DispatchMessage{#A}@user32.dll stdcall';
+
+Function OemToChar(lpszSrc, lpszDst: AnsiString): longint; external 'OemToChar{#A}@user32.dll stdcall delayload';
+function SetWindowLong(hWnd: HWND; nIndex: Integer; dwNewLong: Longint): Longint; external 'SetWindowLong{#A}@user32.dll stdcall';
+function GetWindowLong(hWnd, nIndex: Integer): Longint; external 'GetWindowLong{#A}@user32 stdcall delayload';
+function SetWindowText(hWnd: Longint; lpString: String): Longint; external 'SetWindowText{#A}@user32 stdcall delayload';
+
+function GetTickCount: DWord; external 'GetTickCount@kernel32';
+#ifndef ShowWindow
+  #define ShowWindow
+function ShowWindow(hWnd: HWND; nCmdShow: Integer): BOOL;
+external 'ShowWindow@user32 stdcall delayload';
+#endif
+
+
+procedure AppProcessMessage;
+var
+  Msg: TMyMsg;
+begin
+  while PeekMessage(Msg, 0, 0, 0, PM_REMOVE) do begin
+    TranslateMessage(Msg);
+    DispatchMessage(Msg);
+  end;
+end;
+
+Function NumToStr(Float: Extended): String;
+Begin
+  Result:= Format('%.3n', [Float]); StringChange(Result, ',', '.');
+  while ((Result[Length(Result)] = '0') or (Result[Length(Result)] = '.')) and (Length(Result) > 1) do
+      SetLength(Result, Length(Result)-1);
+End;
+
+Function Size64(Hi, Lo: Integer): Extended;
+Begin
+  Result:= Lo;
+  if Lo<0 then Result:= Result + $7FFFFFFF + $7FFFFFFF + 2;
+  for Hi:= Hi-1 Downto 0 do
+      Result:= Result + $7FFFFFFF + $7FFFFFFF + 2;
+End;
+
+// Converts OEM encoded string into ANSI
+function OemToAnsiStr( strSource: AnsiString): AnsiString;
+var
+  nRet : longint;
+begin
+  SetLength( Result, Length( strSource ) );
+  nRet:= OemToChar( strSource, Result );
+end;
+
+// Sets the TaskBar title
+Procedure SetTaskBarTitle(Title: String); var h: Integer;
+Begin
+  h:= GetWindowLong(MainForm.Handle, -8); if h <> 0 then SetWindowText(h, Title);
+End;
+
+// Converts milliseconds to human-readable time
+Function TicksToTime(Ticks: DWord; h,m,s: String; detail: Boolean): String;
+Begin
+  if detail                               {hh:mm:ss format} then
+      Result:= PADZ(IntToStr(Ticks/3600000), 2) +':'+ PADZ(IntToStr((Ticks/1000 - Ticks/1000/3600*3600)/60), 2) +':'+ PADZ(IntToStr(Ticks/1000 - Ticks/1000/60*60), 2)
+  else if Ticks/3600 >= 1000              {more than hour}  then
+      Result:= IntToStr(Ticks/3600000) +h+' '+ PADZ(IntToStr((Ticks/1000 - Ticks/1000/3600*3600)/60), 2) +m
+  else if Ticks/60 >= 1000                {1..60 minutes}   then
+      Result:= IntToStr(Ticks/60000) +m+' '+ PADZ(IntToStr(Ticks/1000 - Ticks/1000/60*60), 2) +s
+ else Result:= IntToStr(Ticks/1000) +s    {less than one minute}
+End;
+
+//相当于 Application.Handle
+function App_Handle: Longint;
+begin
+  with TForm.Create(nil) do
+  begin
+    Result := GetWindowLong(Handle, -8);
+    Free;
+  end;
+end;
+
+//整型数字转成 16 进制字符串。
+function IntToHex(Value: Integer; Digits: Integer): string;
+begin
+  Result := Format('%0:.' + IntToStr(Digits) + 'x', [Value]);
+end;
+
+[/Code]
+#endif

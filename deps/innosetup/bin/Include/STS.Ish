@@ -1,0 +1,154 @@
+#include "botva2.ish"
+
+[CustomMessages]
+STSWelcomePage=Приветствие
+STSDirEditPage=Папка установки
+STSGroupEditPage=Меню "Пуск"
+STSReadyPage=Подготовка
+STSInstallingPage=Установка
+STSFinishedPage=Завершение
+
+[code]
+type
+  TStatusPart = record Desc: String; PageID: Integer; end;
+  
+var
+  Sts: array of TStatusPart; StsFont: TFont;
+  StsImg1, StsImg2: String; StsLabels: array of TLabel;
+  StsInit: Boolean; StsImg1Hndl, Stsimg2Hndl: LongInt;
+  StsPartWidth, StsLeft, StsTop, StsWidth, StsHeight: Integer;
+  StsDisColor, StsActiveColor: TColor; SortPages: Boolean;
+  
+procedure STS_Init(Background, CurStageImg: String; ALeft, ATop, AWidth, AHeight: Integer; StatusFont: TFont; ASortPages: Boolean);
+begin
+  StsImg1:= Background; StsImg2:= CurStageImg;
+  StsLeft:= ALeft; StsTop:= ATop; SortPages:= ASortPages;
+  StsWidth:= AWidth; StsHeight:= AHeight;
+  if (StatusFont <> nil) then StsFont:= StatusFont else StsFont:= WizardForm.Font;
+  StsInit:= True;
+end;
+
+function STS_FindStage(ADesc: String; APageID: Integer): Integer;
+var i, k: integer;
+begin
+  k:=-1; if (GetArrayLength(Sts) = 0) then begin Result:= k; Exit; end;
+  for i:= 0 to GetArrayLength(Sts)-1 do begin
+    if (Sts[i].Desc=ADesc)and(Sts[i].PageID=APageID) then begin
+      k:= i; Break;
+    end;
+  end;
+  Result:= k;
+end;
+
+function STS_GetStage(APageID: Integer): Integer;
+var i, k: Integer;
+begin
+  k:= -1; if (GetArrayLength(Sts) = 0) then begin Result:= k; Exit; end;
+  for i:= 0 to GetArrayLength(Sts)-1 do begin
+    if (Sts[i].PageID=APageID) then begin
+      k:=i; Break;
+    end;
+  end;
+  Result:= k;
+end;
+
+procedure STS_AddStage(ADesc: String; APageID: Integer);
+var i: Integer;
+begin
+  if STS_FindStage(ADesc, APageID) = -1 then begin
+    i:= GetArrayLength(Sts); SetArrayLength(Sts, i+1);
+    Sts[i].Desc:= ADesc;
+    Sts[i].PageID:= APageID;
+  end;
+end;
+
+procedure STS_RemoveStage(ADesc: String; APageID: Integer);
+var i, k, l: Integer; tmp: Array of TStatusPart;
+begin
+  k:= STS_FindStage(ADesc, APageID); if k=-1 then Exit;
+  l:= 0; SetArrayLength(tmp, GetArrayLength(Sts)-1);
+  for i:= 0 to GetArrayLength(Sts)-1 do begin
+    if (i<>k) then begin
+      tmp[l]:= sts[i]; l:=l+1;
+    end;
+  end;
+  Sts:= tmp;
+end;
+
+procedure STS_SortStages();
+var i, k, l, x: Integer; tmp: Array of TStatusPart;
+begin
+  i:= GetArrayLength(Sts); if (i <= 1) then Exit;
+  x:= 0; k:=0; SetArrayLength(tmp, i);
+  try
+    repeat
+      try
+        l:=0; k:=i;
+        repeat
+          if Sts[x].PageID < Sts[l].PageID then k:= k-1;
+          l:=l+1;
+        until (l >= i);
+      finally begin tmp[k-1]:= Sts[x]; end;
+      end;
+      x:=x+1;
+    until (i = x);
+  Finally
+    Sts:= tmp;
+  end;
+end;
+
+procedure STS_SetColor(ADisColor, AActiveColor: TColor);
+begin
+  StsDisColor:= ADisColor; StsActiveColor:= AActiveColor;
+end;
+
+procedure STS_DefaultPages();
+begin
+  STS_AddStage(CustomMessage('STSWelcomePage'), wpWelcome);
+  STS_AddStage(CustomMessage('STSDirEditPage'), wpSelectDir);
+  STS_AddStage(CustomMessage('STSGroupEditPage'), wpSelectProgramGroup);
+  STS_AddStage(CustomMessage('STSReadyPage'), wpReady);
+  STS_AddStage(CustomMessage('STSInstallingPage'), wpInstalling);
+  STS_AddStage(CustomMessage('STSFinishedPage'), wpFinished);
+end;
+
+procedure STS_CreatePanel();
+var i, k: Integer;
+begin
+  if SortPages then STS_SortStages;
+  k:= GetArrayLength(Sts);
+  if (k = 0) then Exit;
+
+  StsPartWidth:= StsWidth/k;
+  SetArrayLength(StsLabels, k);
+
+  StsImg1Hndl:= ImgLoad(WizardForm.Handle, StsImg1, ScaleX(StsLeft), ScaleY(StsTop), ScaleX(StsWidth), ScaleY(StsHeight), True, True)
+  StsImg2Hndl:= ImgLoad(WizardForm.Handle, StsImg2, ScaleX(StsLeft), SCaleY(StsTop), ScaleX(StsPartWidth), ScaleY(StsHeight), True, True)
+  ImgApplyChanges(WizardForm.Handle);
+  
+  for i:= 0 to k-1 do begin
+    StsLabels[i]:= TLabel.Create(WizardForm);
+    StsLabels[i].SetBounds(ScaleX(StsLeft+StsPartWidth*i), ScaleY(StsTop+(StsHeight-(StsFont.Size*2))/2), ScaleX(StsPartWidth), ScaleY(StsHeight));
+    StsLabels[i].AutoSize:= False;
+    StsLabels[i].WordWrap:= False;
+    StsLabels[i].Transparent:= True;
+    StsLabels[i].Alignment:= taCenter;
+    StsLabels[i].Font:= StsFont;
+    StsLabels[i].Caption:= Sts[i].Desc;
+    StsLabels[i].Parent:= WizardForm;
+    StsLabels[i].Font.Color:= StsDisColor;
+  end;
+end;
+
+procedure STS_UpdateStages(CurPageID: Integer);
+var i, k: Integer;
+begin
+  i:= STS_GetStage(CurPageID)
+  if (i = -1) then Exit;
+  for k:= 0 to GetArrayLength(Sts)-1 do begin
+    StsLabels[k].Font.Color:= StsDisColor;
+  end;
+  StsLabels[i].Font.Color:= StsActiveColor;
+  ImgSetPosition(Stsimg2Hndl, ScaleX(StsLeft+StsPartWidth*i), ScaleY(StsTop), ScaleX(StsPartWidth), ScaleY(StsHeight));
+  ImgApplyChanges(WizardForm.Handle);
+end;

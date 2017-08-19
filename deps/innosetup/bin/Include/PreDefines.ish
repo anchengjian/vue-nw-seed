@@ -1,0 +1,253 @@
+// BEGIN _PREDEFINES_ISH_
+
+#ifndef _PREDEFINES_ISH_
+
+[Preprocessor]
+//Some of the scripts are collected from the internet. If you are the author, please contact me, thanks!
+//--------------------------------------------------------------------------------------------;
+//                                                                                            ;
+// Concept, Idea & Initial Scripting : WLDNA, Mr.Grapes                                       ;
+// Description                       : This Ish function is called Inno Head File, which is   ;
+//                                     used to pack some usefull function. We want to share   ;
+//                                     with you, make script-editing to be a easy way.        ;
+//                                                                                            ;
+//                                                                                            ;
+// Contact me at                     : WLDNA@FoxMail.CoM                                      ;
+// Support Site                      : http://www.wldna.com/                                  ;
+//--------------------------------------------------------------------------------------------;
+
+//Set default visibility to be public
+#define public
+//Define all ish with its name (Use this you can specify if this file is loaded)
+#define _PREDEFINES_ISH_
+
+//Import useful macros
+#include "Macros.Ish"
+
+//Define External Dirs
+#define IshBaseDir(str DirName) \
+  (__PATHFILENAME__ != "") && (LowerCase(ExtractFileName(ExtractFileDir(__PATHFILENAME__))) == LowerCase("Include")) && DirExists(AddBackslash(ExtractFileDir(ExtractFileDir(__PATHFILENAME__))) + DirName) ? \
+    (AddBackslash(ExtractFileDir(ExtractFileDir(__PATHFILENAME__))) + DirName) \
+  : (DirExists(AddBackslash(ExtractFileDir(RemoveBackslash(CompilerPath))) + DirName) ? \
+    (AddBackslash(ExtractFileDir(RemoveBackslash(CompilerPath))) + DirName) \
+    : (AddBackslash(CompilerPath) + DirName))
+
+#define IncludeDir IshBaseDir("Include")
+#define PluginDir  IshBaseDir("Plugins")
+#define ExtendDir  IshBaseDir("Extensions")
+#define DocDir     IshBaseDir("Docs")
+
+//Include all subdirs
+#define Ish_FindHandle
+#define Ish_FindResult
+
+#if Pos(IncludeDir, __INCLUDE__) == 0
+  #pragma include  __INCLUDE__ + ";" + IncludeDir
+#endif
+
+#sub Ish_ProcessFoundFile
+  #define public  ;Fix visibility
+  #define Ish_FileName FindGetFileName(Ish_FindHandle)
+  #if (Ish_FileName != ".") && (Ish_FileName != "..") && DirExists(AddBackslash(IncludeDir) + Ish_FileName)
+    #pragma include  __INCLUDE__ + ";" + AddBackslash(IncludeDir) + Ish_FileName
+  #endif
+#endsub
+
+#for {Ish_FindHandle = Ish_FindResult = FindFirst(IncludeDir + "\*.*", faDirectory); Ish_FindResult; Ish_FindResult = FindNext(Ish_FindHandle)} Ish_ProcessFoundFile
+#if Ish_FindHandle
+  #expr FindClose(Ish_FindHandle)
+#endif
+
+#undef Ish_FileName
+#undef Ish_FindHandle
+#undef Ish_FindResult
+#undef Ish_ProcessFoundFile
+//Include ends
+
+//; ISSI GENERAL (REQUIRED!) This may be defined in the "_issi.cfg" file
+#if DirExists( AddBackslash(ExtendDir) + "ISSI")
+  #define ISSI_IncludePath AddBackslash(ExtendDir) + "ISSI"
+#endif
+
+//Define initial plugin parameter
+#Define Plugin_UnInst True                                         ;
+#Define Plugin_UnInst_Dir ""                                       ;Subfolder to place plugins
+#Define Plugin_CodeDir(str fdll = "") "{tmp}\" + fdll              ;
+#Define Plugin_CodeFlags "stdcall delayload"                       ;
+//Initial Plugin Settings
+#sub Plugin_Init
+  #define public  ;Fix visibility
+  #if Plugin_UnInst
+    #Define Plugin_DestDir "{app}\" + Plugin_UnInst_Dir
+    #Define Plugin_FileFlags "ignoreversion noencryption nocompression" ;solidbreak
+  #else
+    #Define Plugin_DestDir "{tmp}"
+    #Define Plugin_FileFlags "ignoreversion noencryption nocompression dontcopy" ;solidbreak
+  #endif
+#endsub
+
+//Auto Extract Plugins and  Files to  {tmp}
+#define AutoPDirs
+#define AddAutoPDirs(str Dll) \
+  AutoPDirs = AutoPDirs + " PDir('" + Dll + "');", \
+  AddPreInitializeSetup("(PDir('" + Dll + "') <> '')")
+  
+//Prepare to Prefunction for Inno
+#define PreFunc True
+//Procedures
+#define PreInitializeWizard
+#define PreDeinitializeSetup                
+#define PreCurPageChanged
+#define PreCurStepChanged
+#define PreCurUninstallStepChanged
+#define PreDeinitializeUninstall
+#define PreInitializeUninstallProgressForm
+//Functions xx and xx
+#define PreInitializeSetup        "True"
+#define PreNextButtonClick        "True"
+#define PreShouldSkipPage         "True"
+#define PreInitializeUninstall    "True"
+#define PreUninstallNeedRestart   "True"
+//ISPP Function
+//Procedures
+#define AddPreInitializeWizard(str fstr)    \
+  PreFunc ? PreInitializeWizard = PreInitializeWizard + fstr + ";" : ""
+  
+#define AddPreDeinitializeSetup(str fstr)   \
+  PreFunc ? PreDeinitializeSetup = PreDeinitializeSetup + fstr + ";" : ""
+  
+#define AddPreCurPageChanged(str fstr)      \
+  PreFunc ? PreCurPageChanged = PreCurPageChanged + fstr + "(CurPageID);" : ""
+
+#define AddPreCurStepChanged(str fstr)      \
+  PreFunc ? PreCurStepChanged = PreCurStepChanged + fstr + "(CurStep);" : ""
+
+//Uninstall
+#define AddPreCurUninstallStepChanged(str fstr)      \
+  PreFunc ? PreCurUninstallStepChanged = PreCurUninstallStepChanged + fstr + "(CurUninstallStep);" : ""
+
+#define AddPreDeinitializeUninstall(str fstr)   \
+  PreFunc ? PreDeinitializeUninstall = PreDeinitializeUninstall + fstr + ";" : ""
+
+#define AddPreInitializeUninstallProgressForm(str fstr)   \
+  PreFunc ? PreInitializeUninstallProgressForm = PreInitializeUninstallProgressForm + fstr + ";" : ""
+
+//Functions xx and xx
+#define AddPreInitializeSetup(str fstr)     \
+  PreFunc ? PreInitializeSetup = PreInitializeSetup + " and " + fstr : ""
+  
+#define AddPreNextButtonClick(str fstr)     \
+  PreFunc ? PreNextButtonClick = PreNextButtonClick + " and " + fstr + "(CurPageID)" : ""
+
+#define AddPreShouldSkipPage(str fstr)      \
+  PreFunc ? PreShouldSkipPage = PreShouldSkipPage + " and " + fstr + "(PageID)" : ""
+
+//Uninstall
+#define AddPreInitializeUninstall(str fstr)     \
+  PreFunc ? PreInitializeUninstall = PreInitializeUninstall + " and " + fstr : ""
+
+#define AddPreUninstallNeedRestart(str fstr)     \
+  PreFunc ? PreUninstallNeedRestart = PreUninstallNeedRestart + " and " + fstr : ""
+
+
+[/Preprocessor]
+
+#if Ver >= 84148480 ;Required for Inno Setup 5.4.1 and higher.
+[Preprocessor]
+{# "#ifndef _PREDEFINES_ISH_" }
+[/Preprocessor]
+#endif
+
+[Code]
+//Link some types with delphi;
+type
+#ifdef UNICODE
+  #define A "W"
+  PChar = String;
+#else
+  #define A "A"
+
+  AnsiChar = Char;
+
+  #if Ver < 84084480
+  PAnsiChar = PChar;  // Required for Inno Setup 5.3.7 and lower.
+  #endif
+  #if Ver < 84018176
+  AnsiString = String; // There is no need for this line in Inno Setup 5.2.4 and above
+  #endif
+
+  HRESULT = Longint;
+#endif
+
+#if Defined(IS_ENHANCED)
+  #if Pos('ee', IS_Ver_Str) == 0
+    HMENU = HWND;
+  #endif
+#else
+    HMENU = HWND;
+#endif
+
+  WPARAM = Longint;
+  {$EXTERNALSYM WPARAM}
+  LPARAM = Longint;
+  {$EXTERNALSYM LPARAM}
+  LRESULT = Longint;
+  {$EXTERNALSYM LRESULT}
+  PIDL = DWORD;  // Opaque pointer.
+
+  //Taken from psapi.ish
+  HANDLE   = LongInt;
+  HMODULE  = HANDLE;
+  pHMODULE = Array[0..255] of HMODULE;
+  LPDWORD  = DWORD;
+  PDWORD   = Array[0..255] of DWORD;
+  LPTSTR   = String;
+
+function PDir(PName: String): String;
+var
+  FindRec: TFindRec;
+begin
+  Result := ExpandConstant('{tmp}\' + PName);
+
+  if not FileExists(Result) then
+  begin
+    if IsUninstaller then
+    begin
+      if FileExists(ExpandConstant('{app}\') + PName) then
+        FileCopy(ExpandConstant('{app}\') + PName, Result, False)
+      else
+      if FindFirst(ExpandConstant('{app}\*'), FindRec) then
+      try
+        repeat
+          if FindRec.Attributes and FILE_ATTRIBUTE_DIRECTORY <> 0 then
+            if FileExists(ExpandConstant('{app}\') + FindRec.Name + '\' + PName) then
+              FileCopy(ExpandConstant('{app}\') + FindRec.Name + '\' + PName, Result, False);
+        until FileExists(Result) or (not FindNext(FindRec));
+      finally
+        FindClose(FindRec);
+      end;
+    end
+    else
+      ExtractTemporaryFile(PName);
+  end;
+
+  If not FileExists(Result) then Result := '';
+end;
+
+[/Code]
+
+#if Ver >= 84148480 ;Required for Inno Setup 5.4.1 and higher.
+[Preprocessor]
+{# "#endif" }
+[/Preprocessor]
+#endif
+
+
+[Messages]
+AboutSetupNote="PreDefines.ish" is supported by WLDNA : %nhttp://www.wldna.com/?PreDefines.ish
+[/Messages]
+
+#endif
+
+// END _PREDEFINES_ISH_
+
